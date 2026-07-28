@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang='ja'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>
+<meta name='apple-mobile-web-app-capable' content='yes'>
+<meta name='apple-mobile-web-app-status-bar-style' content='default'>
+<meta name='apple-mobile-web-app-title' content='減量プロジェクト'>
+<title>減量プロジェクト</title>
+
+<!--
+  ============================================================
+  減量プロジェクト - index.html
+  Ver.1.0.0
+
+  構成:
+    - ホーム画面   ... 実装済み(目標までの進捗)
+    - 記録画面     ... 実装済み(体重・運動ログ + localStorage保存)
+    - 分析画面     ... 土台のみ(次回実装予定)
+    - レポート画面 ... 土台のみ(次回実装予定)
+    - 設定画面     ... 土台のみ(次回実装予定)
+
+  今は <style> と <script> をこのファイル内に直書きしていますが、
+  クラス名/ID構成はそのまま style.css / app.js に切り出せるように
+  設計しています(次回以降で分離予定)。
+  ============================================================
+-->
+
+<style>
+/* ===== Design Tokens ===== */
+:root{
+  --bg:#f2f2f7;
+  --card:#ffffff;
+  --accent:#0a84ff;
+  --accent-soft:#e8f3ff;
+  --good:#30d158;
+  --text:#111111;
+  --sub:#6e6e73;
+  --line:#e5e5ea;
+  --radius-lg:24px;
+  --radius-md:16px;
+  --radius-sm:12px;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ===== App Shell ===== */
+#app{
+  max-width:430px;
+  margin:0 auto;
+  min-height:100%;
+  position:relative;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 84px);
+}
+
+.topbar{
+  padding:max(env(safe-area-inset-top),20px) 20px 8px;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+}
+.topbar h1{font-size:28px;margin:0;letter-spacing:-.02em}
+.topbar .ver{font-size:11px;color:var(--sub);font-weight:600}
+
+.screen{display:none;padding:8px 16px 16px;animation:fadeIn .25s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Cards ===== */
+.card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  padding:20px;
+  margin:12px 0;
+  box-shadow:0 6px 20px rgba(0,0,0,.06);
+}
+.card h2{margin:0 0 14px;font-size:17px}
+.card .sub{color:var(--sub);font-size:13px;margin-top:-8px;margin-bottom:14px}
+
+/* ===== Home: progress ===== */
+.progress-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.progress-head .now{font-size:36px;font-weight:800;letter-spacing:-.02em}
+.progress-head .unit{font-size:16px;color:var(--sub);font-weight:600;margin-left:2px}
+.progress-head .goal{font-size:13px;color:var(--sub);text-align:right}
+.progress-head .goal b{color:var(--text);font-size:15px}
+
+.bar-track{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--good));transition:width .4s ease}
+.bar-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:6px}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:#f7f7fa;padding:14px;border-radius:var(--radius-md)}
+.stat .lbl{font-size:12px;color:var(--sub);margin-bottom:4px}
+.stat .big{font-size:22px;font-weight:700}
+
+/* ===== Record screen (recycled from training log) ===== */
+label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
+.field{display:flex;align-items:center;gap:12px;height:60px;border:1px solid var(--line);border-radius:var(--radius-md);padding:0 16px}
+.field input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:26px;font-weight:700;font-family:inherit;color:var(--text)}
+.field .unit{flex:0 0 50px;text-align:right;color:var(--sub);font-weight:600;font-size:14px}
+
+.btn-primary{
+  width:100%;height:54px;border:0;border-radius:var(--radius-md);
+  background:var(--accent);color:#fff;font-size:17px;font-weight:700;margin-top:16px;
+}
+.btn-primary:active{opacity:.85}
+
+.list{margin-top:4px}
+.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.row .d{color:var(--sub)}
+
+/* ===== Placeholder screens (分析 / レポート / 設定) ===== */
+.placeholder{
+  text-align:center;
+  padding:60px 20px;
+  color:var(--sub);
+}
+.placeholder .icon{width:44px;height:44px;margin:0 auto 14px;color:var(--sub);opacity:.55}
+.placeholder .icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.placeholder .title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+.placeholder .desc{font-size:13px;line-height:1.6}
+
+/* ===== Toast ===== */
+#toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:#222;color:#fff;padding:10px 16px;border-radius:999px;
+  opacity:0;transition:.3s;pointer-events:none;z-index:20;font-size:14px;
+}
+#toast.err{background:#ff3b30}
+
+/* ===== Bottom Tab Bar ===== */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--line);
+  padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);
+  display:flex;
+  max-width:430px;margin:0 auto;
+  z-index:10;
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:none;border:0;padding:6px 0;color:var(--sub);font-size:10px;font-weight:600;font-family:inherit;
+}
+.tab .ic{width:24px;height:24px;display:block}
+.tab .ic svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab.active{color:var(--accent)}
+.tab.active .ic svg{stroke-width:2.1}
+</style>
+</head>
+
+<body>
+<div id='toast'></div>
+
+<div id='app'>
+
+  <div class='topbar'>
+    <h1 id='screenTitle'>ホーム</h1>
+    <span class='ver'>Ver.1.0.0</span>
+  </div>
+
+  <!-- ============ ホーム画面 ============ -->
+  <section class='screen active' id='screen-home'>
+    <div class='card'>
+      <div class='progress-head'>
+        <div><span class='now' id='homeNow'>-</span><span class='unit'>kg</span></div>
+        <div class='goal'>目標<br><b id='homeGoal'>-</b></div>
+      </div>
+      <div class='bar-track'><div class='bar-fill' id='homeBar' style='width:0%'></div></div>
+      <div class='bar-labels'><span id='homeStartLbl'>開始</span><span id='homeRemainLbl'>残り -</span></div>
+    </div>
+
+    <div class='card'>
+      <h2>今週のサマリー</h2>
+      <div class='stats'>
+        <div class='stat'><div class='lbl'>直近7日平均体重</div><div class='big' id='homeAvg7'>-</div></div>
+        <div class='stat'><div class='lbl'>今週の総運動</div><div class='big' id='homeWeekKcal'>-</div></div>
+        <div class='stat'><div class='lbl'>記録日数</div><div class='big' id='homeCount'>-</div></div>
+        <div class='stat'><div class='lbl'>最終更新</div><div class='big' id='homeLastDate' style='font-size:16px'>-</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 記録画面 ============ -->
+  <section class='screen' id='screen-record'>
+    <div class='card'>
+      <h2>今日の記録</h2>
+      <label>日付</label>
+      <div class='field'><input id='r_date' type='date'></div>
+      <label>体重</label>
+      <div class='field'><input id='r_weight' inputmode='decimal' placeholder='0.0'><div class='unit'>kg</div></div>
+      <label>サイクリング</label>
+      <div class='field'><input id='r_cardio' inputmode='numeric' placeholder='0'><div class='unit'>kcal</div></div>
+      <label>筋トレ</label>
+      <div class='field'><input id='r_strength' inputmode='numeric' placeholder='0'><div class='unit'>kcal</div></div>
+      <button class='btn-primary' onclick='saveEntry()'>保存</button>
+    </div>
+
+    <div class='card'>
+      <h2>最近の記録</h2>
+      <div class='list' id='recordList'></div>
+    </div>
+  </section>
+
+  <!-- ============ 分析画面(土台) ============ -->
+  <section class='screen' id='screen-analysis'>
+    <div class='card placeholder'>
+      <div class='icon'><svg viewBox='0 0 24 24'><path d='M4 20V4'/><path d='M4 20h16'/><rect x='7' y='13' width='2.6' height='7'/><rect x='12' y='9' width='2.6' height='11'/><rect x='17' y='5' width='2.6' height='15'/></svg></div>
+      <div class='title'>分析画面は準備中です</div>
+      <div class='desc'>体重推移グラフ・週ごとの傾向・カロリー分析などを<br>次のアップデートで実装予定です。</div>
+    </div>
+  </section>
+
+  <!-- ============ レポート画面(土台) ============ -->
+  <section class='screen' id='screen-report'>
+    <div class='card placeholder'>
+      <div class='icon'><svg viewBox='0 0 24 24'><path d='M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'/><path d='M14 3v4h4'/><path d='M9 13h6M9 16.5h6M9 9.5h2'/></svg></div>
+      <div class='title'>レポート画面は準備中です</div>
+      <div class='desc'>週次レポートのプレビュー・PDF書き出しを<br>次のアップデートで実装予定です。</div>
+    </div>
+  </section>
+
+  <!-- ============ 設定画面(土台) ============ -->
+  <section class='screen' id='screen-settings'>
+    <div class='card placeholder'>
+      <div class='icon'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='3'/><path d='M12 3v2.2M12 18.8V21M4.9 4.9l1.55 1.55M17.55 17.55 19.1 19.1M3 12h2.2M18.8 12H21M4.9 19.1l1.55-1.55M17.55 6.45 19.1 4.9'/></svg></div>
+      <div class='title'>設定画面は準備中です</div>
+      <div class='desc'>目標体重・開始体重・データのエクスポート/インポートを<br>次のアップデートで実装予定です。</div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ Bottom Tab Bar ============ -->
+<nav class='tabbar'>
+  <button class='tab active' data-screen='home' data-label='ホーム' onclick='switchScreen("home")'>
+    <span class='ic'><svg viewBox='0 0 24 24'><path d='M3 11.5 12 4l9 7.5'/><path d='M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V19a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9'/></svg></span>ホーム
+  </button>
+  <button class='tab' data-screen='record' data-label='記録' onclick='switchScreen("record")'>
+    <span class='ic'><svg viewBox='0 0 24 24'><path d='M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z'/><path d='M14 6.5 17.5 10'/></svg></span>記録
+  </button>
+  <button class='tab' data-screen='analysis' data-label='分析' onclick='switchScreen("analysis")'>
+    <span class='ic'><svg viewBox='0 0 24 24'><path d='M4 20V4'/><path d='M4 20h16'/><rect x='7' y='13' width='2.6' height='7'/><rect x='12' y='9' width='2.6' height='11'/><rect x='17' y='5' width='2.6' height='15'/></svg></span>分析
+  </button>
+  <button class='tab' data-screen='report' data-label='レポート' onclick='switchScreen("report")'>
+    <span class='ic'><svg viewBox='0 0 24 24'><path d='M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'/><path d='M14 3v4h4'/><path d='M9 13h6M9 16.5h6M9 9.5h2'/></svg></span>レポート
+  </button>
+  <button class='tab' data-screen='settings' data-label='設定' onclick='switchScreen("settings")'>
+    <span class='ic'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='3'/><path d='M12 3v2.2M12 18.8V21M4.9 4.9l1.55 1.55M17.55 17.55 19.1 19.1M3 12h2.2M18.8 12H21M4.9 19.1l1.55-1.55M17.55 6.45 19.1 4.9'/></svg></span>設定
+  </button>
+</nav>
+
+<script>
+/* ===== Config (将来的に設定画面から編集可能にする) ===== */
+const CONFIG = {
+  goalWeight: 75.0,
+  startWeight: null // 初回記録から自動セットされる
+};
+const STORE_KEY = 'trainingEntries';
+
+/* ===== Screen switching ===== */
+const TITLES = {home:'ホーム',record:'記録',analysis:'分析',report:'レポート',settings:'設定'};
+
+function switchScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
+  screenTitle.textContent = TITLES[name];
+  if(name==='home') refreshHome();
+  if(name==='record') refreshRecord();
+}
+
+/* ===== Storage helpers ===== */
+function loadAll(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    console.error('load error', e);
+    return {};
+  }
+}
+function saveAll(obj){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+    return true;
+  }catch(e){
+    console.error('save error', e);
+    return false;
+  }
+}
+function sortedEntries(){
+  return Object.values(loadAll()).sort((a,b)=> a.date < b.date ? 1 : -1); // 新しい順
+}
+
+function showToast(msg, isErr){
+  toast.textContent = msg;
+  toast.className = isErr ? 'err' : '';
+  toast.style.opacity = 1;
+  setTimeout(()=>{ toast.style.opacity = 0; }, 1500);
+}
+
+/* ===== Home screen ===== */
+function refreshHome(){
+  const entries = sortedEntries();
+  const weighted = entries.filter(x => x.weight !== null && x.weight !== '');
+
+  if(!weighted.length){
+    homeNow.textContent = '-';
+    homeGoal.textContent = CONFIG.goalWeight.toFixed(1)+' kg';
+    homeBar.style.width = '0%';
+    homeStartLbl.textContent = '記録なし';
+    homeRemainLbl.textContent = '-';
+    homeAvg7.textContent = '-';
+    homeWeekKcal.textContent = '-';
+    homeCount.textContent = '0 日';
+    homeLastDate.textContent = '-';
+    return;
+  }
+
+  const latest = +weighted[0].weight;
+  const start = CONFIG.startWeight || +weighted[weighted.length-1].weight;
+  const goal = CONFIG.goalWeight;
+
+  homeNow.textContent = latest.toFixed(1);
+  homeGoal.textContent = goal.toFixed(1)+' kg';
+
+  const totalDist = Math.max(start - goal, 0.01);
+  const progressed = Math.min(Math.max(start - latest, 0), totalDist);
+  const pct = Math.round((progressed/totalDist)*100);
+  homeBar.style.width = pct+'%';
+  homeStartLbl.textContent = '開始 '+start.toFixed(1)+'kg';
+  const remain = Math.max(latest - goal, 0);
+  homeRemainLbl.textContent = remain>0 ? ('残り '+remain.toFixed(1)+'kg') : '目標達成🎉';
+
+  const last7 = weighted.slice(0,7).map(x=>+x.weight);
+  homeAvg7.textContent = (last7.reduce((s,v)=>s+v,0)/last7.length).toFixed(1)+' kg';
+
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+  const weekKcal = entries.filter(x => new Date(x.date) >= weekAgo)
+    .reduce((s,x)=> s + (+x.cardio||0) + (+x.strength||0), 0);
+  homeWeekKcal.textContent = weekKcal + ' kcal';
+
+  homeCount.textContent = entries.length + ' 日';
+  homeLastDate.textContent = entries[0].date;
+}
+
+/* ===== Record screen ===== */
+function refreshRecord(){
+  const entries = sortedEntries();
+  recordList.innerHTML = entries.slice(0,10).map(x=>{
+    const total = (+x.cardio||0) + (+x.strength||0);
+    const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
+    return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
+  }).join('') || `<div class='row'><span class='d'>記録がまだありません</span></div>`;
+}
+
+function saveEntry(){
+  if(!r_date.value){ showToast('日付を入力してください', true); return; }
+  const all = loadAll();
+  all[r_date.value] = {
+    date: r_date.value,
+    weight: r_weight.value || null,
+    cardio: r_cardio.value || null,
+    strength: r_strength.value || null
+  };
+  const ok = saveAll(all);
+  if(ok){
+    showToast('保存しました', false);
+    refreshRecord();
+  }else{
+    showToast('保存に失敗しました', true);
+  }
+}
+
+/* ===== Init ===== */
+r_date.value = new Date().toISOString().slice(0,10);
+refreshHome();
+refreshRecord();
+</script>
+</body>
+</html>
