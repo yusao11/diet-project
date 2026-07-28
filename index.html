@@ -16,7 +16,7 @@
   構成:
     - ホーム画面   ... 実装済み(目標までの進捗)
     - 記録画面     ... 実装済み(体重・運動ログ + localStorage保存)
-    - 分析画面     ... 土台のみ(次回実装予定)
+    - 分析画面     ... 実装済み(週タブ自動生成 + 体重推移グラフ)
     - レポート画面 ... 土台のみ(次回実装予定)
     - 設定画面     ... 土台のみ(次回実装予定)
 
@@ -128,6 +128,28 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .placeholder .title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
 .placeholder .desc{font-size:13px;line-height:1.6}
 
+/* ===== Analysis: weekly tabs ===== */
+.week-tabs{
+  display:flex;gap:8px;overflow-x:auto;
+  padding:4px 2px 14px;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.week-tabs::-webkit-scrollbar{display:none}
+.week-pill{
+  flex:0 0 auto;
+  padding:9px 16px;
+  border-radius:999px;
+  background:#eef0f3;
+  color:var(--sub);
+  font-size:13px;font-weight:700;
+  border:0;font-family:inherit;
+  white-space:nowrap;
+}
+.week-pill.active{background:var(--accent);color:#fff}
+
+.chart-wrap{width:100%;height:150px}
+.chart-empty{text-align:center;padding:36px 0;color:var(--sub);font-size:13px}
+
 /* ===== Toast ===== */
 #toast{
   position:fixed;top:20px;left:50%;transform:translateX(-50%);
@@ -212,13 +234,10 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     </div>
   </section>
 
-  <!-- ============ 分析画面(土台) ============ -->
+  <!-- ============ 分析画面 ============ -->
   <section class='screen' id='screen-analysis'>
-    <div class='card placeholder'>
-      <div class='icon'><svg viewBox='0 0 24 24'><path d='M4 20V4'/><path d='M4 20h16'/><rect x='7' y='13' width='2.6' height='7'/><rect x='12' y='9' width='2.6' height='11'/><rect x='17' y='5' width='2.6' height='15'/></svg></div>
-      <div class='title'>分析画面は準備中です</div>
-      <div class='desc'>体重推移グラフ・週ごとの傾向・カロリー分析などを<br>次のアップデートで実装予定です。</div>
-    </div>
+    <div class='week-tabs' id='weekTabs'></div>
+    <div id='weekDetail'></div>
   </section>
 
   <!-- ============ レポート画面(土台) ============ -->
@@ -278,6 +297,7 @@ function switchScreen(name){
   screenTitle.textContent = TITLES[name];
   if(name==='home') refreshHome();
   if(name==='record') refreshRecord();
+  if(name==='analysis') refreshAnalysis();
 }
 
 /* ===== Storage helpers ===== */
@@ -381,6 +401,115 @@ function saveEntry(){
   }else{
     showToast('保存に失敗しました', true);
   }
+}
+
+/* ===== Analysis screen ===== */
+let currentWeekKey = null; // 選択中の週(月曜日の日付)
+
+function weekStart(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  const dow = (d.getDay()+6)%7; // 月曜=0 ... 日曜=6
+  d.setDate(d.getDate()-dow);
+  return d.toISOString().slice(0,10);
+}
+
+function weekLabel(wk){
+  const s = new Date(wk+'T00:00:00');
+  const e = new Date(s); e.setDate(e.getDate()+6);
+  const f = d => (d.getMonth()+1)+'/'+d.getDate();
+  return f(s)+' - '+f(e);
+}
+
+function refreshAnalysis(selectedWeek){
+  const entries = sortedEntries(); // 新しい順
+  if(!entries.length){
+    weekTabs.innerHTML = '';
+    weekDetail.innerHTML = `<div class='card placeholder'>
+      <div class='icon'><svg viewBox='0 0 24 24'><path d='M4 20V4'/><path d='M4 20h16'/><rect x='7' y='13' width='2.6' height='7'/><rect x='12' y='9' width='2.6' height='11'/><rect x='17' y='5' width='2.6' height='15'/></svg></div>
+      <div class='title'>記録がまだありません</div>
+      <div class='desc'>「記録」タブで体重や運動を記録すると<br>ここに週ごとの分析が自動で表示されます。</div>
+    </div>`;
+    return;
+  }
+
+  const groups = {};
+  entries.forEach(e => {
+    const wk = weekStart(e.date);
+    (groups[wk] = groups[wk] || []).push(e);
+  });
+  const weekKeys = Object.keys(groups).sort((a,b) => a < b ? 1 : -1); // 新しい週が先頭
+
+  currentWeekKey = (selectedWeek && groups[selectedWeek]) ? selectedWeek : weekKeys[0];
+
+  weekTabs.innerHTML = weekKeys.map(wk =>
+    `<button class='week-pill ${wk===currentWeekKey?'active':''}' onclick='refreshAnalysis("${wk}")'>${weekLabel(wk)}</button>`
+  ).join('');
+
+  renderWeekDetail(groups[currentWeekKey]);
+}
+
+function renderWeekDetail(weekEntries){
+  const asc = [...weekEntries].sort((a,b) => a.date < b.date ? -1 : 1);
+  const weighted = asc.filter(x => x.weight !== null && x.weight !== '');
+  const totalKcal = weekEntries.reduce((s,x) => s + (+x.cardio||0) + (+x.strength||0), 0);
+  const avgW = weighted.length ? weighted.reduce((s,x)=>s+ +x.weight,0)/weighted.length : null;
+  const change = weighted.length >= 2 ? (+weighted[weighted.length-1].weight - +weighted[0].weight) : null;
+
+  weekDetail.innerHTML = `
+    <div class='card'>
+      <h2>体重推移</h2>
+      <div class='chart-wrap' id='chartWrap'></div>
+    </div>
+    <div class='card'>
+      <div class='stats'>
+        <div class='stat'><div class='lbl'>週の平均体重</div><div class='big'>${avgW!==null ? avgW.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>週内の増減</div><div class='big'>${change!==null ? (change>=0?'+':'')+change.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>合計運動</div><div class='big'>${totalKcal} kcal</div></div>
+        <div class='stat'><div class='lbl'>記録日数</div><div class='big'>${weekEntries.length} 日</div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h2>日別記録</h2>
+      <div class='list'>${[...asc].reverse().map(x=>{
+        const total = (+x.cardio||0) + (+x.strength||0);
+        const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
+        return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
+      }).join('')}</div>
+    </div>
+  `;
+  drawWeightChart(weighted);
+}
+
+function drawWeightChart(weighted){
+  const wrap = document.getElementById('chartWrap');
+  if(!weighted.length){
+    wrap.innerHTML = `<div class='chart-empty'>この週の体重記録がありません</div>`;
+    return;
+  }
+  const W=300, H=150, pad=22;
+  const values = weighted.map(x => +x.weight);
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = Math.max(max-min, 0.4);
+  const stepX = weighted.length > 1 ? (W-pad*2)/(weighted.length-1) : 0;
+
+  const pts = weighted.map((x,i) => {
+    const px = pad + i*stepX;
+    const py = pad + (H-pad*2) * (1 - ((+x.weight-min)/range));
+    return [px,py];
+  });
+  const pathD = pts.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const dots = pts.map(p => `<circle cx='${p[0].toFixed(1)}' cy='${p[1].toFixed(1)}' r='4' style='fill:var(--accent)'/>`).join('');
+  const labels = weighted.map((x,i) => {
+    const d = new Date(x.date+'T00:00:00');
+    const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+    return `<text x='${pts[i][0].toFixed(1)}' y='${H-4}' font-size='9' fill='var(--sub)' text-anchor='middle'>${wd}</text>`;
+  }).join('');
+
+  wrap.innerHTML = `<svg viewBox='0 0 ${W} ${H}' style='width:100%;height:100%'>
+    <path d='${pathD}' fill='none' style='stroke:var(--accent)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/>
+    ${dots}
+    ${labels}
+  </svg>`;
 }
 
 /* ===== Init ===== */
