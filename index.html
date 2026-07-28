@@ -61,13 +61,10 @@ body{
 }
 
 .topbar{
-  padding:max(env(safe-area-inset-top),20px) 20px 8px;
-  display:flex;
-  align-items:baseline;
-  justify-content:space-between;
+  padding:max(env(safe-area-inset-top),20px) 60px 8px 20px;
 }
 .topbar h1{font-size:28px;margin:0;letter-spacing:-.02em}
-.topbar .ver{font-size:11px;color:var(--sub);font-weight:600}
+.topbar .ver{font-size:11px;color:var(--sub);font-weight:600;margin-top:3px}
 
 .screen{display:none;padding:8px 16px 16px;animation:fadeIn .25s ease}
 .screen.active{display:block}
@@ -228,7 +225,7 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 
   <div class='topbar'>
     <h1 id='screenTitle'>ホーム</h1>
-    <span class='ver'>Ver.1.0.0</span>
+    <div class='ver'>Ver.1.0.0</div>
   </div>
 
   <!-- ============ ホーム画面 ============ -->
@@ -380,6 +377,15 @@ function sortedEntries(){
   return Object.values(loadAll()).sort((a,b)=> a.date < b.date ? 1 : -1); // 新しい順
 }
 
+/* 端末のローカル日付を YYYY-MM-DD で取得(toISOString はUTC変換されるため使わない) */
+function localDateStr(d){
+  d = d || new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
 function showToast(msg, isErr){
   toast.textContent = msg;
   toast.className = isErr ? 'err' : '';
@@ -466,7 +472,7 @@ function estimateForecast(weighted, latest, goal){
 /* ===== Today's checklist (auto-checked from today's record) ===== */
 function refreshTodo(){
   const all = loadAll();
-  const today = new Date().toISOString().slice(0,10);
+  const today = localDateStr();
   const e = all[today] || {};
   const filled = v => v !== undefined && v !== null && v !== '';
   const items = [
@@ -515,6 +521,7 @@ function saveEntry(){
     showToast('保存しました', false);
     loadEntryToForm();
     refreshRecord();
+    refreshTodo();
   }else{
     showToast('保存に失敗しました', true);
   }
@@ -527,7 +534,7 @@ function weekStart(dateStr){
   const d = new Date(dateStr+'T00:00:00');
   const dow = (d.getDay()+6)%7; // 月曜=0 ... 日曜=6
   d.setDate(d.getDate()-dow);
-  return d.toISOString().slice(0,10);
+  return localDateStr(d);
 }
 
 function weekLabel(wk){
@@ -648,7 +655,7 @@ function drawWeightChart(weighted){
 }
 
 /* ===== Init ===== */
-r_date.value = new Date().toISOString().slice(0,10);
+r_date.value = localDateStr();
 loadEntryToForm();
 refreshHome();
 refreshRecord();
