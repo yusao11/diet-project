@@ -90,6 +90,8 @@ body{
 .progress-head .unit{font-size:16px;color:var(--sub);font-weight:600;margin-left:2px}
 .progress-head .goal{font-size:13px;color:var(--sub);text-align:right}
 .progress-head .goal b{color:var(--text);font-size:15px}
+.now-date{font-size:12px;color:var(--sub);margin-top:2px}
+.forecast{color:var(--sub);font-weight:500}
 
 .bar-track{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
 .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--good));transition:width .4s ease}
@@ -147,8 +149,41 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 }
 .week-pill.active{background:var(--accent);color:#fff}
 
-.chart-wrap{width:100%;height:150px}
+.chart-wrap{width:100%;height:170px}
 .chart-empty{text-align:center;padding:36px 0;color:var(--sub);font-size:13px}
+
+/* ===== FAB (+ button) ===== */
+.fab-wrap{position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:15}
+.fab-add{
+  position:absolute;
+  top:max(env(safe-area-inset-top),20px);
+  right:16px;
+  width:34px;height:34px;
+  border-radius:50%;
+  background:var(--accent);
+  border:0;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(10,132,255,.35);
+  pointer-events:auto;
+}
+.fab-add svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round}
+
+/* ===== Today's checklist & training menu ===== */
+.todo-list{display:flex;flex-direction:column}
+.todo-item{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:8px 2px;border:0;background:none;
+  font-family:inherit;font-size:12.5px;color:var(--text);text-align:left;
+}
+.todo-check{
+  width:19px;height:19px;border-radius:50%;
+  border:2px solid var(--line);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+}
+.todo-item.done .todo-check{background:var(--good);border-color:var(--good)}
+.todo-check svg{display:none;width:11px;height:11px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.todo-item.done .todo-check svg{display:block}
+.todo-item.done span:last-child{color:var(--sub);text-decoration:line-through}
 
 /* ===== Toast ===== */
 #toast{
@@ -183,6 +218,11 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 
 <body>
 <div id='toast'></div>
+<div class='fab-wrap'>
+  <button id='fabAdd' class='fab-add' onclick='goToRecordDate()' aria-label='記録を追加'>
+    <svg viewBox='0 0 24 24'><path d='M12 5v14M5 12h14'/></svg>
+  </button>
+</div>
 
 <div id='app'>
 
@@ -195,7 +235,7 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
   <section class='screen active' id='screen-home'>
     <div class='card'>
       <div class='progress-head'>
-        <div><span class='now' id='homeNow'>-</span><span class='unit'>kg</span></div>
+        <div><span class='now' id='homeNow'>-</span><span class='unit'>kg</span><div class='now-date' id='homeDateLbl'>記録なし</div></div>
         <div class='goal'>目標<br><b id='homeGoal'>-</b></div>
       </div>
       <div class='bar-track'><div class='bar-fill' id='homeBar' style='width:0%'></div></div>
@@ -210,6 +250,11 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
         <div class='stat'><div class='lbl'>記録日数</div><div class='big' id='homeCount'>-</div></div>
         <div class='stat'><div class='lbl'>最終更新</div><div class='big' id='homeLastDate' style='font-size:16px'>-</div></div>
       </div>
+    </div>
+
+    <div class='card'>
+      <h2 style='font-size:15px'>今日やること</h2>
+      <div class='todo-list' id='todoList'></div>
     </div>
   </section>
 
@@ -295,9 +340,21 @@ function switchScreen(name){
   document.getElementById('screen-'+name).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
   screenTitle.textContent = TITLES[name];
+  fabAdd.style.display = ['home','analysis','report'].includes(name) ? 'flex' : 'none';
   if(name==='home') refreshHome();
   if(name==='record') refreshRecord();
   if(name==='analysis') refreshAnalysis();
+}
+
+function goToRecordDate(){
+  switchScreen('record');
+  setTimeout(()=>{ r_date.focus(); }, 50);
+}
+
+function goToRecordField(key){
+  switchScreen('record');
+  const map = {weight:'r_weight', cardio:'r_cardio', strength:'r_strength'};
+  setTimeout(()=>{ const el = document.getElementById(map[key]); if(el) el.focus(); }, 50);
 }
 
 /* ===== Storage helpers ===== */
@@ -335,8 +392,11 @@ function refreshHome(){
   const entries = sortedEntries();
   const weighted = entries.filter(x => x.weight !== null && x.weight !== '');
 
+  refreshTodo();
+
   if(!weighted.length){
     homeNow.textContent = '-';
+    homeDateLbl.textContent = '記録なし';
     homeGoal.textContent = CONFIG.goalWeight.toFixed(1)+' kg';
     homeBar.style.width = '0%';
     homeStartLbl.textContent = '記録なし';
@@ -353,6 +413,8 @@ function refreshHome(){
   const goal = CONFIG.goalWeight;
 
   homeNow.textContent = latest.toFixed(1);
+  const latestDateObj = new Date(weighted[0].date+'T00:00:00');
+  homeDateLbl.textContent = (latestDateObj.getMonth()+1)+'月'+latestDateObj.getDate()+'日時点';
   homeGoal.textContent = goal.toFixed(1)+' kg';
 
   const totalDist = Math.max(start - goal, 0.01);
@@ -360,8 +422,12 @@ function refreshHome(){
   const pct = Math.round((progressed/totalDist)*100);
   homeBar.style.width = pct+'%';
   homeStartLbl.textContent = '開始 '+start.toFixed(1)+'kg';
+
   const remain = Math.max(latest - goal, 0);
-  homeRemainLbl.textContent = remain>0 ? ('残り '+remain.toFixed(1)+'kg') : '目標達成🎉';
+  const forecastText = estimateForecast(weighted, latest, goal);
+  homeRemainLbl.innerHTML = remain>0
+    ? `残り${remain.toFixed(1)}kg <span class='forecast'>・${forecastText}</span>`
+    : '目標達成🎉';
 
   const last7 = weighted.slice(0,7).map(x=>+x.weight);
   homeAvg7.textContent = (last7.reduce((s,v)=>s+v,0)/last7.length).toFixed(1)+' kg';
@@ -373,6 +439,47 @@ function refreshHome(){
 
   homeCount.textContent = entries.length + ' 日';
   homeLastDate.textContent = entries[0].date;
+}
+
+/* 直近の体重変化ペースから目標到達の目安日を概算する */
+function estimateForecast(weighted, latest, goal){
+  if(latest <= goal) return '達成済み';
+  const asc = [...weighted].reverse(); // 古い→新しい
+  const latestDate = asc[asc.length-1].date;
+  let win = asc.filter(x => (new Date(latestDate) - new Date(x.date)) / 86400000 <= 21);
+  if(win.length < 2) win = asc;
+  if(win.length < 2) return '算出には記録が足りません';
+
+  const f = win[0], l = win[win.length-1];
+  const days = (new Date(l.date) - new Date(f.date)) / 86400000;
+  if(days <= 0) return '算出には記録が足りません';
+  const ratePerDay = (+l.weight - +f.weight) / days; // 負の値が減量ペース
+
+  if(ratePerDay >= -0.005) return 'ペース算出中';
+
+  const daysNeeded = (latest - goal) / (-ratePerDay);
+  const target = new Date(l.date);
+  target.setDate(target.getDate() + Math.round(daysNeeded));
+  return (target.getMonth()+1)+'/'+target.getDate()+'頃';
+}
+
+/* ===== Today's checklist (auto-checked from today's record) ===== */
+function refreshTodo(){
+  const all = loadAll();
+  const today = new Date().toISOString().slice(0,10);
+  const e = all[today] || {};
+  const filled = v => v !== undefined && v !== null && v !== '';
+  const items = [
+    { key:'weight',   label:'朝の体重測定入力',           done: filled(e.weight) },
+    { key:'cardio',   label:'サイクリング消費カロリー入力', done: filled(e.cardio) },
+    { key:'strength', label:'筋力トレ消費カロリー入力',     done: filled(e.strength) }
+  ];
+  todoList.innerHTML = items.map(it => `
+    <button class='todo-item ${it.done?'done':''}' onclick='goToRecordField("${it.key}")'>
+      <span class='todo-check'><svg viewBox='0 0 24 24'><path d='M5 13l4 4L19 7'/></svg></span>
+      <span>${it.label}</span>
+    </button>
+  `).join('');
 }
 
 /* ===== Record screen ===== */
@@ -496,29 +603,47 @@ function drawWeightChart(weighted){
     wrap.innerHTML = `<div class='chart-empty'>この週の体重記録がありません</div>`;
     return;
   }
-  const W=300, H=150, pad=22;
+  const W=300, H=170;
+  const padL=34, padR=10, padT=18, padB=22;
   const values = weighted.map(x => +x.weight);
-  const min = Math.min(...values), max = Math.max(...values);
-  const range = Math.max(max-min, 0.4);
-  const stepX = weighted.length > 1 ? (W-pad*2)/(weighted.length-1) : 0;
+  const rawMin = Math.min(...values), rawMax = Math.max(...values);
+  const cushion = Math.max((rawMax-rawMin)*0.25, 0.3);
+  const min = rawMin - cushion, max = rawMax + cushion;
+  const span = Math.max(max-min, 0.4);
+  const stepX = weighted.length > 1 ? (W-padL-padR)/(weighted.length-1) : 0;
 
-  const pts = weighted.map((x,i) => {
-    const px = pad + i*stepX;
-    const py = pad + (H-pad*2) * (1 - ((+x.weight-min)/range));
-    return [px,py];
-  });
+  const yFor = v => padT + (H-padT-padB) * (1 - ((v-min)/span));
+
+  const pts = weighted.map((x,i) => [padL + i*stepX, yFor(+x.weight)]);
   const pathD = pts.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
   const dots = pts.map(p => `<circle cx='${p[0].toFixed(1)}' cy='${p[1].toFixed(1)}' r='4' style='fill:var(--accent)'/>`).join('');
-  const labels = weighted.map((x,i) => {
+
+  /* 目盛り(最大・中間・最小の3本) */
+  const ticks = [rawMax, (rawMax+rawMin)/2, rawMin];
+  const grid = ticks.map(v => {
+    const y = yFor(v);
+    return `<line x1='${padL}' y1='${y.toFixed(1)}' x2='${W-padR}' y2='${y.toFixed(1)}' stroke='var(--line)' stroke-width='1' stroke-dasharray='2,3'/>
+      <text x='${padL-6}' y='${(y+3).toFixed(1)}' font-size='9' fill='var(--sub)' text-anchor='end'>${v.toFixed(1)}</text>`;
+  }).join('');
+
+  /* 各点の実測値ラベル */
+  const valueLabels = weighted.map((x,i) =>
+    `<text x='${pts[i][0].toFixed(1)}' y='${(pts[i][1]-9).toFixed(1)}' font-size='9' font-weight='700' fill='var(--text)' text-anchor='middle'>${(+x.weight).toFixed(1)}</text>`
+  ).join('');
+
+  /* 曜日ラベル */
+  const dayLabels = weighted.map((x,i) => {
     const d = new Date(x.date+'T00:00:00');
     const wd = ['日','月','火','水','木','金','土'][d.getDay()];
-    return `<text x='${pts[i][0].toFixed(1)}' y='${H-4}' font-size='9' fill='var(--sub)' text-anchor='middle'>${wd}</text>`;
+    return `<text x='${pts[i][0].toFixed(1)}' y='${H-6}' font-size='9' fill='var(--sub)' text-anchor='middle'>${wd}</text>`;
   }).join('');
 
   wrap.innerHTML = `<svg viewBox='0 0 ${W} ${H}' style='width:100%;height:100%'>
+    ${grid}
     <path d='${pathD}' fill='none' style='stroke:var(--accent)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/>
     ${dots}
-    ${labels}
+    ${valueLabels}
+    ${dayLabels}
   </svg>`;
 }
 
