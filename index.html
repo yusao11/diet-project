@@ -435,4 +435,343 @@ function saveEntry(){
   };
   const ok = saveAll(all);
   if(ok){
-    showToast('保存しました', false
+    showToast('保存しました', false);
+    loadEntryToForm();
+    refreshRecord();
+    refreshTodo();
+  }else{
+    showToast('保存に失敗しました', true);
+  }
+}
+
+let currentWeekKey = null;
+
+function weekStart(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  const dow = (d.getDay()+6)%7;
+  d.setDate(d.getDate()-dow);
+  return localDateStr(d);
+}
+
+function weekLabel(wk){
+  const s = new Date(wk+'T00:00:00');
+  const e = new Date(s); e.setDate(e.getDate()+6);
+  const f = d => (d.getMonth()+1)+'/'+d.getDate();
+  return f(s)+' - '+f(e);
+}
+
+function groupEntriesByWeek(entries){
+  const groups = {};
+  entries.forEach(e => {
+    const wk = weekStart(e.date);
+    (groups[wk] = groups[wk] || []).push(e);
+  });
+  const weekKeys = Object.keys(groups).sort((a,b) => a < b ? 1 : -1);
+  return { groups, weekKeys };
+}
+
+function refreshAnalysis(selectedWeek){
+  const entries = sortedEntries();
+  if(!entries.length){
+    weekTabs.innerHTML = '';
+    weekDetail.innerHTML = `<div class='card placeholder'>
+      <div class='icon'><svg viewBox='0 0 24 24'><path d='M4 20V4'/><path d='M4 20h16'/><rect x='7' y='13' width='2.6' height='7'/><rect x='12' y='9' width='2.6' height='11'/><rect x='17' y='5' width='2.6' height='15'/></svg></div>
+      <div class='title'>記録がまだありません</div>
+      <div class='desc'>「記録」タブで体重や運動を記録すると<br>ここに週ごとの分析が自動で表示されます。</div>
+    </div>`;
+    return;
+  }
+
+  const { groups, weekKeys } = groupEntriesByWeek(entries);
+  currentWeekKey = (selectedWeek && groups[selectedWeek]) ? selectedWeek : weekKeys[0];
+
+  weekTabs.innerHTML = weekKeys.map(wk =>
+    `<button class='week-pill ${wk===currentWeekKey?'active':''}' onclick='refreshAnalysis("${wk}")'>${weekLabel(wk)}</button>`
+  ).join('');
+
+  renderWeekDetail(groups[currentWeekKey]);
+}
+
+function renderWeekDetail(weekEntries){
+  const asc = [...weekEntries].sort((a,b) => a.date < b.date ? -1 : 1);
+  const weighted = asc.filter(x => x.weight !== null && x.weight !== '');
+  const totalKcal = weekEntries.reduce((s,x) => s + (+x.cardio||0) + (+x.strength||0), 0);
+  const avgW = weighted.length ? weighted.reduce((s,x)=>s+ +x.weight,0)/weighted.length : null;
+  const change = weighted.length >= 2 ? (+weighted[weighted.length-1].weight - +weighted[0].weight) : null;
+
+  weekDetail.innerHTML = `
+    <div class='card'>
+      <h2>体重推移</h2>
+      <div class='chart-wrap' id='chartWrap'></div>
+    </div>
+    <div class='card'>
+      <div class='stats'>
+        <div class='stat'><div class='lbl'>週の平均体重</div><div class='big'>${avgW!==null ? avgW.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>週内の増減</div><div class='big'>${change!==null ? (change>=0?'+':'')+change.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>合計運動</div><div class='big'>${totalKcal} kcal</div></div>
+        <div class='stat'><div class='lbl'>記録日数</div><div class='big'>${weekEntries.length} 日</div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h2>日別記録</h2>
+      <div class='list'>${[...asc].reverse().map(x=>{
+        const total = (+x.cardio||0) + (+x.strength||0);
+        const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
+        return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
+      }).join('')}</div>
+    </div>
+  `;
+  drawWeightChart(weighted);
+}
+
+function niceTicks(min, max, step){
+  step = step || 0.5;
+  if((max-min)/step > 8) step = 1;
+  const start = Math.ceil(min/step)*step;
+  const end = Math.floor(max/step)*step;
+  const ticks = [];
+  for(let t=start; t<=end+1e-9; t+=step) ticks.push(+t.toFixed(2));
+  return ticks;
+}
+
+function drawWeightChart(weighted){
+  const wrap = document.getElementById('chartWrap');
+  if(!weighted.length){
+    wrap.innerHTML = `<div class='chart-empty'>この週の体重記録がありません</div>`;
+    return;
+  }
+  const W=300, H=170;
+  const padL=34, padR=10, padT=18, padB=22;
+  const values = weighted.map(x => +x.weight);
+  const rawMin = Math.min(...values), rawMax = Math.max(...values);
+  const cushion = Math.max((rawMax-rawMin)*0.25, 0.3);
+  const min = rawMin - cushion, max = rawMax + cushion;
+  const span = Math.max(max-min, 0.4);
+  const stepX = weighted.length > 1 ? (W-padL-padR)/(weighted.length-1) : 0;
+
+  const yFor = v => padT + (H-padT-padB) * (1 - ((v-min)/span));
+
+  const pts = weighted.map((x,i) => [padL + i*stepX, yFor(+x.weight)]);
+  const pathD = pts.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const dots = pts.map(p => `<circle cx='${p[0].toFixed(1)}' cy='${p[1].toFixed(1)}' r='4' style='fill:var(--accent)'/>`).join('');
+
+  const ticks = niceTicks(min, max, 0.5);
+  const grid = ticks.map(v => {
+    const y = yFor(v);
+    return `<line x1='${padL}' y1='${y.toFixed(1)}' x2='${W-padR}' y2='${y.toFixed(1)}' stroke='var(--line)' stroke-width='1' stroke-dasharray='2,3'/>
+      <text x='${padL-6}' y='${(y+3).toFixed(1)}' font-size='9' fill='var(--sub)' text-anchor='end'>${v.toFixed(1)}</text>`;
+  }).join('');
+
+  const valueLabels = weighted.map((x,i) =>
+    `<text x='${pts[i][0].toFixed(1)}' y='${(pts[i][1]-9).toFixed(1)}' font-size='9' font-weight='700' fill='var(--text)' text-anchor='middle'>${(+x.weight).toFixed(1)}</text>`
+  ).join('');
+
+  const dayLabels = weighted.map((x,i) => {
+    const d = new Date(x.date+'T00:00:00');
+    const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+    return `<text x='${pts[i][0].toFixed(1)}' y='${H-6}' font-size='9' fill='var(--sub)' text-anchor='middle'>${wd}</text>`;
+  }).join('');
+
+  wrap.innerHTML = `<svg viewBox='0 0 ${W} ${H}' style='width:100%;height:100%'>
+    ${grid}
+    <path d='${pathD}' fill='none' style='stroke:var(--accent)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/>
+    ${dots}
+    ${valueLabels}
+    ${dayLabels}
+  </svg>`;
+}
+
+let currentReportWeekKey = null;
+
+function refreshReport(selectedWeek){
+  const entries = sortedEntries();
+  if(!entries.length){
+    reportWeekTabs.innerHTML = '';
+    reportDetail.innerHTML = `<div class='card placeholder'>
+      <div class='icon'><svg viewBox='0 0 24 24'><path d='M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'/><path d='M14 3v4h4'/><path d='M9 13h6M9 16.5h6M9 9.5h2'/></svg></div>
+      <div class='title'>レポートはまだありません</div>
+      <div class='desc'>「記録」タブで体重や運動を記録すると<br>ここに週次レポートが自動で作成されます。</div>
+    </div>`;
+    return;
+  }
+
+  const { groups, weekKeys } = groupEntriesByWeek(entries);
+  currentReportWeekKey = (selectedWeek && groups[selectedWeek]) ? selectedWeek : weekKeys[0];
+
+  reportWeekTabs.innerHTML = weekKeys.map(wk =>
+    `<button class='week-pill ${wk===currentReportWeekKey?'active':''}' onclick='refreshReport("${wk}")'>${weekLabel(wk)}</button>`
+  ).join('');
+
+  const idx = weekKeys.indexOf(currentReportWeekKey);
+  const prevKey = weekKeys[idx+1];
+  renderReportDetail(groups[currentReportWeekKey], weekLabel(currentReportWeekKey), prevKey ? groups[prevKey] : null);
+}
+
+function renderReportDetail(weekEntries, label, prevWeekEntries){
+  const asc = [...weekEntries].sort((a,b) => a.date < b.date ? -1 : 1);
+  const weighted = asc.filter(x => x.weight !== null && x.weight !== '');
+  const totalKcal = weekEntries.reduce((s,x) => s + (+x.cardio||0) + (+x.strength||0), 0);
+  const avgW = weighted.length ? weighted.reduce((s,x)=>s+ +x.weight,0)/weighted.length : null;
+  const change = weighted.length >= 2 ? (+weighted[weighted.length-1].weight - +weighted[0].weight) : null;
+  const achievementRate = Math.round((weekEntries.length/7)*100);
+
+  let comparisonText = '先週分のデータがまだありません。';
+  if(prevWeekEntries && prevWeekEntries.length){
+    const prevWeighted = prevWeekEntries.filter(x => x.weight !== null && x.weight !== '');
+    if(prevWeighted.length && avgW !== null){
+      const prevAvg = prevWeighted.reduce((s,x)=>s+ +x.weight,0)/prevWeighted.length;
+      const diff = avgW - prevAvg;
+      if(diff < -0.05) comparisonText = `先週の平均${prevAvg.toFixed(1)}kgから、${Math.abs(diff).toFixed(1)}kg減少しました。`;
+      else if(diff > 0.05) comparisonText = `先週の平均${prevAvg.toFixed(1)}kgから、${diff.toFixed(1)}kg増加しました。`;
+      else comparisonText = `先週(平均${prevAvg.toFixed(1)}kg)とほぼ同じペースでした。`;
+    }
+  }
+
+  let comment;
+  if(!weighted.length){
+    comment = 'この週は体重の記録がありませんでした。来週は記録を残していきましょう。';
+  } else if(change !== null && change < -0.05){
+    comment = `週を通じて${Math.abs(change).toFixed(1)}kgの減量ができました。このペースを維持していきましょう。`;
+  } else if(change !== null && change > 0.05){
+    comment = `週を通じて${change.toFixed(1)}kgの増加が見られました。食事量や運動の頻度を見直してみましょう。`;
+  } else {
+    comment = '体重はほぼ横ばいで推移しました。焦らず記録を続けていきましょう。';
+  }
+
+  reportDetail.innerHTML = `
+    <div class='card'>
+      <h2>${label} の週次レポート</h2>
+      <p class='report-lead'>${comment}</p>
+    </div>
+    <div class='card'>
+      <div class='stats'>
+        <div class='stat'><div class='lbl'>週の平均体重</div><div class='big'>${avgW!==null ? avgW.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>週内の増減</div><div class='big'>${change!==null ? (change>=0?'+':'')+change.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>合計運動</div><div class='big'>${totalKcal} kcal</div></div>
+        <div class='stat'><div class='lbl'>記録達成率</div><div class='big'>${achievementRate}%</div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h2 style='font-size:15px'>先週との比較</h2>
+      <p class='report-text'>${comparisonText}</p>
+    </div>
+    <div class='card'>
+      <h2>日別記録</h2>
+      <div class='list'>${[...asc].reverse().map(x=>{
+        const total = (+x.cardio||0) + (+x.strength||0);
+        const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
+        return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
+      }).join('')}</div>
+    </div>
+  `;
+}
+
+function refreshSettings(){
+  s_goal.value = CONFIG.goalWeight;
+  s_start.value = CONFIG.startWeight !== null ? CONFIG.startWeight : '';
+  const count = Object.keys(loadAll()).length;
+  dataInfo.textContent = `記録 ${count}件`;
+}
+
+function saveSettings(){
+  const g = parseFloat(s_goal.value);
+  if(isNaN(g)){ showToast('目標体重を入力してください', true); return; }
+  const startRaw = s_start.value.trim();
+  const settings = {
+    goalWeight: g,
+    startWeight: startRaw !== '' ? parseFloat(startRaw) : null
+  };
+  try{
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }catch(e){
+    console.error('settings save error', e);
+    showToast('保存に失敗しました', true);
+    return;
+  }
+  CONFIG.goalWeight = settings.goalWeight;
+  CONFIG.startWeight = settings.startWeight;
+  showToast('設定を保存しました', false);
+}
+
+async function exportData(){
+  const all = loadAll();
+  const count = Object.keys(all).length;
+  if(!count){ showToast('データがありません', true); return; }
+  const json = JSON.stringify(all, null, 2);
+  const filename = 'diet_data_' + localDateStr() + '.json';
+  const file = new File([json], filename, {type:'application/json'});
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:filename});
+      showToast(count+'件を共有しました', false);
+      return;
+    }catch(e){
+      if(e.name==='AbortError') return;
+    }
+  }
+
+  try{
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(count+'件をエクスポートしました', false);
+  }catch(e){
+    console.error('export error', e);
+    showToast('エクスポートに失敗しました', true);
+  }
+}
+
+settingsFileInput.addEventListener('change', async (ev) => {
+  const f = ev.target.files[0];
+  if(!f) return;
+  try{
+    const text = await f.text();
+    const imported = JSON.parse(text);
+    if(typeof imported !== 'object' || Array.isArray(imported)) throw new Error('invalid format');
+    const all = loadAll();
+    let added = 0, updated = 0;
+    for(const [k, v] of Object.entries(imported)){
+      if(!v || !v.date) continue;
+      if(all[k]) updated++; else added++;
+      all[k] = v;
+    }
+    const ok = saveAll(all);
+    if(ok){
+      showToast(`追加${added}件・更新${updated}件`, false);
+      refreshSettings();
+    }else{
+      showToast('保存に失敗しました', true);
+    }
+  }catch(e){
+    console.error('import error', e);
+    showToast('ファイルの読み込みに失敗しました', true);
+  }
+  ev.target.value = '';
+});
+
+function resetAllData(){
+  const count = Object.keys(loadAll()).length;
+  if(!count){ showToast('削除できるデータがありません', true); return; }
+  if(!confirm(`${count}件の記録をすべて削除します。この操作は取り消せません。よろしいですか?`)) return;
+  try{
+    localStorage.removeItem(STORE_KEY);
+    showToast('すべてのデータを削除しました', false);
+    refreshSettings();
+  }catch(e){
+    console.error('reset error', e);
+    showToast('削除に失敗しました', true);
+  }
+}
+
+r_date.value = localDateStr();
+loadSettings();
+loadEntryToForm();
+refreshHome();
+refreshRecord();
+</script>
+</body>
+</html>
