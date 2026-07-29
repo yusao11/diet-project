@@ -78,6 +78,13 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .report-lead{font-size:14.5px;line-height:1.7;color:var(--text);margin:0}
 .report-text{font-size:13px;line-height:1.7;color:var(--sub);margin:0}
 
+.btnrow{display:flex;gap:10px;margin-top:14px}
+.btn2{flex:1;height:46px;border:0;border-radius:14px;background:#eef2f7;color:var(--accent);font-size:15px;font-weight:600;font-family:inherit}
+.btn2:active{opacity:.8}
+.btn-danger{width:100%;height:50px;border:0;border-radius:var(--radius-md);background:#ff3b30;color:#fff;font-size:15px;font-weight:700;margin-top:14px;font-family:inherit}
+.btn-danger:active{opacity:.85}
+#settingsFileInput{display:none}
+
 .fab-wrap{position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:15}
 .fab-add{position:absolute;top:max(env(safe-area-inset-top),20px);right:16px;width:34px;height:34px;border-radius:50%;background:var(--accent);border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(10,132,255,.35);pointer-events:auto}
 .fab-add svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round}
@@ -174,10 +181,30 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
   </section>
 
   <section class='screen' id='screen-settings'>
-    <div class='card placeholder'>
-      <div class='icon'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='3'/><path d='M12 3 15.1 6.63 19.79 7.5 18.2 12 19.79 16.5 15.1 17.37 12 21 8.9 17.37 4.21 16.5 5.8 12 4.21 7.5 8.9 6.63Z'/></svg></div>
-      <div class='title'>設定画面は準備中です</div>
-      <div class='desc'>目標体重・開始体重・データのエクスポート/インポートを<br>次のアップデートで実装予定です。</div>
+    <div class='card'>
+      <h2>目標設定</h2>
+      <label>目標体重</label>
+      <div class='field'><input id='s_goal' inputmode='decimal' placeholder='75.0'><div class='unit'>kg</div></div>
+      <label>開始体重(任意)</label>
+      <div class='field'><input id='s_start' inputmode='decimal' placeholder='自動'><div class='unit'>kg</div></div>
+      <div class='card sub' style='margin:8px 0 0;padding:0;box-shadow:none;font-size:12.5px'>空欄にすると、最初に記録した体重が自動的に使われます。</div>
+      <button class='btn-primary' onclick='saveSettings()'>設定を保存</button>
+    </div>
+
+    <div class='card'>
+      <h2>データ管理</h2>
+      <div class='sub' id='dataInfo' style='margin-top:-4px'>記録0件</div>
+      <div class='btnrow'>
+        <button class='btn2' onclick='exportData()'>エクスポート</button>
+        <button class='btn2' onclick='settingsFileInput.click()'>インポート</button>
+      </div>
+      <input id='settingsFileInput' type='file' accept='application/json,.json'>
+    </div>
+
+    <div class='card'>
+      <h2 style='color:#ff3b30'>データを削除</h2>
+      <div class='sub' style='margin-top:-4px'>この操作は取り消せません。すべての記録が削除されます。</div>
+      <button class='btn-danger' onclick='resetAllData()'>すべての記録を削除</button>
     </div>
   </section>
 
@@ -207,6 +234,22 @@ const CONFIG = {
   startWeight: null
 };
 const STORE_KEY = 'trainingEntries';
+const SETTINGS_KEY = 'appSettings';
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(s.goalWeight !== undefined && s.goalWeight !== null && !isNaN(+s.goalWeight)){
+      CONFIG.goalWeight = +s.goalWeight;
+    }
+    CONFIG.startWeight = (s.startWeight !== undefined && s.startWeight !== null && s.startWeight !== '')
+      ? +s.startWeight : null;
+  }catch(e){
+    console.error('settings load error', e);
+  }
+}
 
 const TITLES = {home:'ホーム',record:'記録',analysis:'分析',report:'レポート',settings:'設定'};
 
@@ -220,6 +263,7 @@ function switchScreen(name){
   if(name==='record') refreshRecord();
   if(name==='analysis') refreshAnalysis();
   if(name==='report') refreshReport();
+  if(name==='settings') refreshSettings();
 }
 
 function goToRecordDate(){
@@ -622,7 +666,109 @@ function renderReportDetail(weekEntries, label, prevWeekEntries){
   `;
 }
 
+function refreshSettings(){
+  s_goal.value = CONFIG.goalWeight;
+  s_start.value = CONFIG.startWeight !== null ? CONFIG.startWeight : '';
+  const count = Object.keys(loadAll()).length;
+  dataInfo.textContent = `記録 ${count}件`;
+}
+
+function saveSettings(){
+  const g = parseFloat(s_goal.value);
+  if(isNaN(g)){ showToast('目標体重を入力してください', true); return; }
+  const startRaw = s_start.value.trim();
+  const settings = {
+    goalWeight: g,
+    startWeight: startRaw !== '' ? parseFloat(startRaw) : null
+  };
+  try{
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }catch(e){
+    console.error('settings save error', e);
+    showToast('保存に失敗しました', true);
+    return;
+  }
+  CONFIG.goalWeight = settings.goalWeight;
+  CONFIG.startWeight = settings.startWeight;
+  showToast('設定を保存しました', false);
+}
+
+async function exportData(){
+  const all = loadAll();
+  const count = Object.keys(all).length;
+  if(!count){ showToast('データがありません', true); return; }
+  const json = JSON.stringify(all, null, 2);
+  const filename = 'diet_data_' + localDateStr() + '.json';
+  const file = new File([json], filename, {type:'application/json'});
+
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file], title:filename});
+      showToast(count+'件を共有しました', false);
+      return;
+    }catch(e){
+      if(e.name==='AbortError') return;
+    }
+  }
+
+  try{
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(count+'件をエクスポートしました', false);
+  }catch(e){
+    console.error('export error', e);
+    showToast('エクスポートに失敗しました', true);
+  }
+}
+
+settingsFileInput.addEventListener('change', async (ev) => {
+  const f = ev.target.files[0];
+  if(!f) return;
+  try{
+    const text = await f.text();
+    const imported = JSON.parse(text);
+    if(typeof imported !== 'object' || Array.isArray(imported)) throw new Error('invalid format');
+    const all = loadAll();
+    let added = 0, updated = 0;
+    for(const [k, v] of Object.entries(imported)){
+      if(!v || !v.date) continue;
+      if(all[k]) updated++; else added++;
+      all[k] = v;
+    }
+    const ok = saveAll(all);
+    if(ok){
+      showToast(`追加${added}件・更新${updated}件`, false);
+      refreshSettings();
+    }else{
+      showToast('保存に失敗しました', true);
+    }
+  }catch(e){
+    console.error('import error', e);
+    showToast('ファイルの読み込みに失敗しました', true);
+  }
+  ev.target.value = '';
+});
+
+function resetAllData(){
+  const count = Object.keys(loadAll()).length;
+  if(!count){ showToast('削除できるデータがありません', true); return; }
+  if(!confirm(`${count}件の記録をすべて削除します。この操作は取り消せません。よろしいですか?`)) return;
+  try{
+    localStorage.removeItem(STORE_KEY);
+    showToast('すべてのデータを削除しました', false);
+    refreshSettings();
+  }catch(e){
+    console.error('reset error', e);
+    showToast('削除に失敗しました', true);
+  }
+}
+
 r_date.value = localDateStr();
+loadSettings();
 loadEntryToForm();
 refreshHome();
 refreshRecord();
