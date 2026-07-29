@@ -6,6 +6,7 @@
 <meta name='apple-mobile-web-app-capable' content='yes'>
 <meta name='apple-mobile-web-app-status-bar-style' content='default'>
 <meta name='apple-mobile-web-app-title' content='減量プロジェクト'>
+<link rel='apple-touch-icon' href='apple-touch-icon.png'>
 <title>減量プロジェクト</title>
 
 <style>
@@ -259,6 +260,7 @@ function switchScreen(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
   screenTitle.textContent = TITLES[name];
   fabAdd.style.display = ['home','analysis','report'].includes(name) ? 'flex' : 'none';
+  triggerHaptic('light');
   if(name==='home') refreshHome();
   if(name==='record') refreshRecord();
   if(name==='analysis') refreshAnalysis();
@@ -312,6 +314,12 @@ function showToast(msg, isErr){
   toast.className = isErr ? 'err' : '';
   toast.style.opacity = 1;
   setTimeout(()=>{ toast.style.opacity = 0; }, 1500);
+}
+
+function triggerHaptic(intensity){
+  if(!navigator.vibrate) return;
+  const ms = intensity === 'light' ? 8 : intensity === 'medium' ? 15 : 25;
+  try{ navigator.vibrate(ms); }catch(e){ /* noop */ }
 }
 
 function refreshHome(){
@@ -436,6 +444,7 @@ function saveEntry(){
   const ok = saveAll(all);
   if(ok){
     showToast('保存しました', false);
+    triggerHaptic('medium');
     loadEntryToForm();
     refreshRecord();
     refreshTodo();
@@ -691,14 +700,33 @@ function saveSettings(){
   CONFIG.goalWeight = settings.goalWeight;
   CONFIG.startWeight = settings.startWeight;
   showToast('設定を保存しました', false);
+  triggerHaptic('medium');
 }
 
 async function exportData(){
   const all = loadAll();
-  const count = Object.keys(all).length;
+  const dates = Object.keys(all).sort();
+  const count = dates.length;
   if(!count){ showToast('データがありません', true); return; }
-  const json = JSON.stringify(all, null, 2);
-  const filename = 'diet_data_' + localDateStr() + '.json';
+
+  const readable = {
+    アプリ名: '減量プロジェクト',
+    エクスポート日: localDateStr(),
+    目標体重kg: CONFIG.goalWeight,
+    記録件数: count,
+    記録: dates.map(d => {
+      const e = all[d];
+      return {
+        日付: e.date,
+        体重kg: (e.weight !== null && e.weight !== '') ? +e.weight : null,
+        サイクリングkcal: (e.cardio !== null && e.cardio !== '') ? +e.cardio : null,
+        筋力トレkcal: (e.strength !== null && e.strength !== '') ? +e.strength : null
+      };
+    })
+  };
+
+  const json = JSON.stringify(readable, null, 2);
+  const filename = '減量プロジェクト_記録_' + localDateStr() + '.json';
   const file = new File([json], filename, {type:'application/json'});
 
   if(navigator.canShare && navigator.canShare({files:[file]})){
@@ -731,14 +759,31 @@ settingsFileInput.addEventListener('change', async (ev) => {
   try{
     const text = await f.text();
     const imported = JSON.parse(text);
-    if(typeof imported !== 'object' || Array.isArray(imported)) throw new Error('invalid format');
     const all = loadAll();
     let added = 0, updated = 0;
-    for(const [k, v] of Object.entries(imported)){
-      if(!v || !v.date) continue;
-      if(all[k]) updated++; else added++;
-      all[k] = v;
+
+    if(imported && Array.isArray(imported.記録)){
+      imported.記録.forEach(r => {
+        if(!r || !r.日付) return;
+        const key = r.日付;
+        if(all[key]) updated++; else added++;
+        all[key] = {
+          date: key,
+          weight: (r.体重kg !== undefined && r.体重kg !== null) ? r.体重kg : null,
+          cardio: (r.サイクリングkcal !== undefined && r.サイクリングkcal !== null) ? r.サイクリングkcal : null,
+          strength: (r.筋力トレkcal !== undefined && r.筋力トレkcal !== null) ? r.筋力トレkcal : null
+        };
+      });
+    }else if(imported && typeof imported === 'object' && !Array.isArray(imported)){
+      for(const [k, v] of Object.entries(imported)){
+        if(!v || !v.date) continue;
+        if(all[k]) updated++; else added++;
+        all[k] = v;
+      }
+    }else{
+      throw new Error('invalid format');
     }
+
     const ok = saveAll(all);
     if(ok){
       showToast(`追加${added}件・更新${updated}件`, false);
@@ -772,6 +817,32 @@ loadSettings();
 loadEntryToForm();
 refreshHome();
 refreshRecord();
+
+const SCREEN_ORDER = ['home','record','analysis','report','settings'];
+let touchStartX = 0, touchStartY = 0, touchStartInsideScroll = false;
+
+document.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+  touchStartInsideScroll = !!e.target.closest('.week-tabs, .list');
+}, {passive:true});
+
+document.addEventListener('touchend', (e) => {
+  if(touchStartInsideScroll) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+  const current = document.querySelector('.screen.active').id.replace('screen-','');
+  const idx = SCREEN_ORDER.indexOf(current);
+  if(dx < 0 && idx < SCREEN_ORDER.length - 1){
+    switchScreen(SCREEN_ORDER[idx+1]);
+  }else if(dx > 0 && idx > 0){
+    switchScreen(SCREEN_ORDER[idx-1]);
+  }
+}, {passive:true});
 </script>
 </body>
 </html>
