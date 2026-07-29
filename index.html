@@ -24,10 +24,9 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hir
 .topbar h1{font-size:28px;margin:0;letter-spacing:-.02em}
 .topbar .ver{font-size:11px;color:var(--sub);font-weight:600;margin-top:3px}
 
-.screens-wrap{position:relative;overflow-x:hidden}
-.screen{display:none;padding:8px 16px 16px}
+.screen{display:none;padding:8px 16px 16px;animation:fadeIn .25s ease}
 .screen.active{display:block}
-.screen.sliding{position:absolute;top:0;left:0;right:0;will-change:transform}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 .card{background:var(--card);border-radius:var(--radius-lg);padding:20px;margin:12px 0;box-shadow:0 6px 20px rgba(0,0,0,.06)}
 .card h2{margin:0 0 14px;font-size:17px}
@@ -126,8 +125,6 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     <div class='ver'>Ver.1.0.0</div>
   </div>
 
-  <div class='screens-wrap' id='screensWrap'>
-
   <section class='screen active' id='screen-home'>
     <div class='card'>
       <div class='progress-head'>
@@ -212,8 +209,6 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     </div>
   </section>
 
-  </div>
-
 </div>
 
 <nav class='tabbar'>
@@ -258,61 +253,10 @@ function loadSettings(){
 }
 
 const TITLES = {home:'ホーム',record:'記録',analysis:'分析',report:'レポート',settings:'設定'};
-const SCREEN_ORDER = ['home','record','analysis','report','settings'];
-let isSwitching = false;
-
-function animateToScreen(name){
-  const newEl = document.getElementById('screen-'+name);
-  const oldEl = document.querySelector('.screen.active');
-
-  if(!oldEl || oldEl === newEl || isSwitching){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    newEl.classList.add('active');
-    return;
-  }
-
-  const oldIdx = SCREEN_ORDER.indexOf(oldEl.id.replace('screen-',''));
-  const newIdx = SCREEN_ORDER.indexOf(name);
-  const dir = newIdx > oldIdx ? 1 : -1;
-
-  isSwitching = true;
-  oldEl.classList.remove('active');
-  oldEl.classList.add('sliding');
-  newEl.classList.add('sliding');
-  oldEl.style.display = 'block';
-  newEl.style.display = 'block';
-  oldEl.style.transition = 'none';
-  newEl.style.transition = 'none';
-  oldEl.style.transform = 'translateX(0)';
-  newEl.style.transform = `translateX(${dir*100}%)`;
-
-  void newEl.offsetWidth;
-
-  requestAnimationFrame(()=>{
-    const ease = 'transform .32s cubic-bezier(.22,.68,0,1)';
-    oldEl.style.transition = ease;
-    newEl.style.transition = ease;
-    oldEl.style.transform = `translateX(${-dir*100}%)`;
-    newEl.style.transform = 'translateX(0)';
-  });
-
-  const finish = () => {
-    oldEl.classList.remove('sliding');
-    oldEl.style.transition = '';
-    oldEl.style.transform = '';
-    oldEl.style.display = 'none';
-
-    newEl.classList.remove('sliding');
-    newEl.style.transition = '';
-    newEl.style.transform = '';
-    newEl.classList.add('active');
-    isSwitching = false;
-  };
-  newEl.addEventListener('transitionend', finish, {once:true});
-}
 
 function switchScreen(name){
-  animateToScreen(name);
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
   screenTitle.textContent = TITLES[name];
   fabAdd.style.display = ['home','analysis','report'].includes(name) ? 'flex' : 'none';
@@ -874,6 +818,7 @@ loadEntryToForm();
 refreshHome();
 refreshRecord();
 
+const SCREEN_ORDER = ['home','record','analysis','report','settings'];
 let touchStartX = 0, touchStartY = 0, touchStartInsideScroll = false;
 
 document.addEventListener('touchstart', (e) => {
