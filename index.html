@@ -289,11 +289,13 @@ function animateToScreen(name){
   void newEl.offsetWidth;
 
   requestAnimationFrame(()=>{
-    const ease = 'transform .32s cubic-bezier(.22,.68,0,1)';
-    oldEl.style.transition = ease;
-    newEl.style.transition = ease;
-    oldEl.style.transform = `translateX(${-dir*100}%)`;
-    newEl.style.transform = 'translateX(0)';
+    requestAnimationFrame(()=>{
+      const ease = 'transform .32s cubic-bezier(.22,.68,0,1)';
+      oldEl.style.transition = ease;
+      newEl.style.transition = ease;
+      oldEl.style.transform = `translateX(${-dir*100}%)`;
+      newEl.style.transform = 'translateX(0)';
+    });
   });
 
   const finish = () => {
@@ -573,8 +575,7 @@ function renderWeekDetail(weekEntries){
       <div class='stats'>
         <div class='stat'><div class='lbl'>週の平均体重</div><div class='big'>${avgW!==null ? avgW.toFixed(1)+' kg' : '-'}</div></div>
         <div class='stat'><div class='lbl'>週内の増減</div><div class='big'>${change!==null ? (change>=0?'+':'')+change.toFixed(1)+' kg' : '-'}</div></div>
-        <div class='stat'><div class='lbl'>合計運動</div><div class='big'>${totalKcal} kcal</div></div>
-        <div class='stat'><div class='lbl'>記録日数</div><div class='big'>${weekEntries.length} 日</div></div>
+        <div class='stat'><div class='lbl'>週内の合計運動</div><div class='big'>${totalKcal} kcal</div></div>
       </div>
     </div>
     <div class='card'>
@@ -712,7 +713,7 @@ function renderReportDetail(weekEntries, label, prevWeekEntries){
       <div class='stats'>
         <div class='stat'><div class='lbl'>週の平均体重</div><div class='big'>${avgW!==null ? avgW.toFixed(1)+' kg' : '-'}</div></div>
         <div class='stat'><div class='lbl'>週内の増減</div><div class='big'>${change!==null ? (change>=0?'+':'')+change.toFixed(1)+' kg' : '-'}</div></div>
-        <div class='stat'><div class='lbl'>合計運動</div><div class='big'>${totalKcal} kcal</div></div>
+        <div class='stat'><div class='lbl'>週内の合計運動</div><div class='big'>${totalKcal} kcal</div></div>
         <div class='stat'><div class='lbl'>記録達成率</div><div class='big'>${achievementRate}%</div></div>
       </div>
     </div>
