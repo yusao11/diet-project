@@ -8,13 +8,6 @@
 <meta name='apple-mobile-web-app-title' content='減量プロジェクト'>
 <title>減量プロジェクト</title>
 
-<!--
-  ============================================================
-  減量プロジェクト - index.html
-  Ver.1.0.0
-  ============================================================
--->
-
 <style>
 :root{
   --bg:#f2f2f7;--card:#ffffff;--accent:#0a84ff;--accent-soft:#e8f3ff;--good:#30d158;
@@ -81,6 +74,9 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 
 .chart-wrap{width:100%;height:170px}
 .chart-empty{text-align:center;padding:36px 0;color:var(--sub);font-size:13px}
+
+.report-lead{font-size:14.5px;line-height:1.7;color:var(--text);margin:0}
+.report-text{font-size:13px;line-height:1.7;color:var(--sub);margin:0}
 
 .fab-wrap{position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:15}
 .fab-add{position:absolute;top:max(env(safe-area-inset-top),20px);right:16px;width:34px;height:34px;border-radius:50%;background:var(--accent);border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(10,132,255,.35);pointer-events:auto}
@@ -173,11 +169,8 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
   </section>
 
   <section class='screen' id='screen-report'>
-    <div class='card placeholder'>
-      <div class='icon'><svg viewBox='0 0 24 24'><path d='M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'/><path d='M14 3v4h4'/><path d='M9 13h6M9 16.5h6M9 9.5h2'/></svg></div>
-      <div class='title'>レポート画面は準備中です</div>
-      <div class='desc'>週次レポートのプレビュー・PDF書き出しを<br>次のアップデートで実装予定です。</div>
-    </div>
+    <div class='week-tabs' id='reportWeekTabs'></div>
+    <div id='reportDetail'></div>
   </section>
 
   <section class='screen' id='screen-settings'>
@@ -226,6 +219,7 @@ function switchScreen(name){
   if(name==='home') refreshHome();
   if(name==='record') refreshRecord();
   if(name==='analysis') refreshAnalysis();
+  if(name==='report') refreshReport();
 }
 
 function goToRecordDate(){
@@ -422,6 +416,16 @@ function weekLabel(wk){
   return f(s)+' - '+f(e);
 }
 
+function groupEntriesByWeek(entries){
+  const groups = {};
+  entries.forEach(e => {
+    const wk = weekStart(e.date);
+    (groups[wk] = groups[wk] || []).push(e);
+  });
+  const weekKeys = Object.keys(groups).sort((a,b) => a < b ? 1 : -1);
+  return { groups, weekKeys };
+}
+
 function refreshAnalysis(selectedWeek){
   const entries = sortedEntries();
   if(!entries.length){
@@ -434,13 +438,7 @@ function refreshAnalysis(selectedWeek){
     return;
   }
 
-  const groups = {};
-  entries.forEach(e => {
-    const wk = weekStart(e.date);
-    (groups[wk] = groups[wk] || []).push(e);
-  });
-  const weekKeys = Object.keys(groups).sort((a,b) => a < b ? 1 : -1);
-
+  const { groups, weekKeys } = groupEntriesByWeek(entries);
   currentWeekKey = (selectedWeek && groups[selectedWeek]) ? selectedWeek : weekKeys[0];
 
   weekTabs.innerHTML = weekKeys.map(wk =>
@@ -482,6 +480,16 @@ function renderWeekDetail(weekEntries){
   drawWeightChart(weighted);
 }
 
+function niceTicks(min, max, step){
+  step = step || 0.5;
+  if((max-min)/step > 8) step = 1;
+  const start = Math.ceil(min/step)*step;
+  const end = Math.floor(max/step)*step;
+  const ticks = [];
+  for(let t=start; t<=end+1e-9; t+=step) ticks.push(+t.toFixed(2));
+  return ticks;
+}
+
 function drawWeightChart(weighted){
   const wrap = document.getElementById('chartWrap');
   if(!weighted.length){
@@ -503,7 +511,7 @@ function drawWeightChart(weighted){
   const pathD = pts.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
   const dots = pts.map(p => `<circle cx='${p[0].toFixed(1)}' cy='${p[1].toFixed(1)}' r='4' style='fill:var(--accent)'/>`).join('');
 
-  const ticks = [rawMax, (rawMax+rawMin)/2, rawMin];
+  const ticks = niceTicks(min, max, 0.5);
   const grid = ticks.map(v => {
     const y = yFor(v);
     return `<line x1='${padL}' y1='${y.toFixed(1)}' x2='${W-padR}' y2='${y.toFixed(1)}' stroke='var(--line)' stroke-width='1' stroke-dasharray='2,3'/>
@@ -527,6 +535,91 @@ function drawWeightChart(weighted){
     ${valueLabels}
     ${dayLabels}
   </svg>`;
+}
+
+let currentReportWeekKey = null;
+
+function refreshReport(selectedWeek){
+  const entries = sortedEntries();
+  if(!entries.length){
+    reportWeekTabs.innerHTML = '';
+    reportDetail.innerHTML = `<div class='card placeholder'>
+      <div class='icon'><svg viewBox='0 0 24 24'><path d='M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'/><path d='M14 3v4h4'/><path d='M9 13h6M9 16.5h6M9 9.5h2'/></svg></div>
+      <div class='title'>レポートはまだありません</div>
+      <div class='desc'>「記録」タブで体重や運動を記録すると<br>ここに週次レポートが自動で作成されます。</div>
+    </div>`;
+    return;
+  }
+
+  const { groups, weekKeys } = groupEntriesByWeek(entries);
+  currentReportWeekKey = (selectedWeek && groups[selectedWeek]) ? selectedWeek : weekKeys[0];
+
+  reportWeekTabs.innerHTML = weekKeys.map(wk =>
+    `<button class='week-pill ${wk===currentReportWeekKey?'active':''}' onclick='refreshReport("${wk}")'>${weekLabel(wk)}</button>`
+  ).join('');
+
+  const idx = weekKeys.indexOf(currentReportWeekKey);
+  const prevKey = weekKeys[idx+1];
+  renderReportDetail(groups[currentReportWeekKey], weekLabel(currentReportWeekKey), prevKey ? groups[prevKey] : null);
+}
+
+function renderReportDetail(weekEntries, label, prevWeekEntries){
+  const asc = [...weekEntries].sort((a,b) => a.date < b.date ? -1 : 1);
+  const weighted = asc.filter(x => x.weight !== null && x.weight !== '');
+  const totalKcal = weekEntries.reduce((s,x) => s + (+x.cardio||0) + (+x.strength||0), 0);
+  const avgW = weighted.length ? weighted.reduce((s,x)=>s+ +x.weight,0)/weighted.length : null;
+  const change = weighted.length >= 2 ? (+weighted[weighted.length-1].weight - +weighted[0].weight) : null;
+  const achievementRate = Math.round((weekEntries.length/7)*100);
+
+  let comparisonText = '先週分のデータがまだありません。';
+  if(prevWeekEntries && prevWeekEntries.length){
+    const prevWeighted = prevWeekEntries.filter(x => x.weight !== null && x.weight !== '');
+    if(prevWeighted.length && avgW !== null){
+      const prevAvg = prevWeighted.reduce((s,x)=>s+ +x.weight,0)/prevWeighted.length;
+      const diff = avgW - prevAvg;
+      if(diff < -0.05) comparisonText = `先週の平均${prevAvg.toFixed(1)}kgから、${Math.abs(diff).toFixed(1)}kg減少しました。`;
+      else if(diff > 0.05) comparisonText = `先週の平均${prevAvg.toFixed(1)}kgから、${diff.toFixed(1)}kg増加しました。`;
+      else comparisonText = `先週(平均${prevAvg.toFixed(1)}kg)とほぼ同じペースでした。`;
+    }
+  }
+
+  let comment;
+  if(!weighted.length){
+    comment = 'この週は体重の記録がありませんでした。来週は記録を残していきましょう。';
+  } else if(change !== null && change < -0.05){
+    comment = `週を通じて${Math.abs(change).toFixed(1)}kgの減量ができました。このペースを維持していきましょう。`;
+  } else if(change !== null && change > 0.05){
+    comment = `週を通じて${change.toFixed(1)}kgの増加が見られました。食事量や運動の頻度を見直してみましょう。`;
+  } else {
+    comment = '体重はほぼ横ばいで推移しました。焦らず記録を続けていきましょう。';
+  }
+
+  reportDetail.innerHTML = `
+    <div class='card'>
+      <h2>${label} の週次レポート</h2>
+      <p class='report-lead'>${comment}</p>
+    </div>
+    <div class='card'>
+      <div class='stats'>
+        <div class='stat'><div class='lbl'>週の平均体重</div><div class='big'>${avgW!==null ? avgW.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>週内の増減</div><div class='big'>${change!==null ? (change>=0?'+':'')+change.toFixed(1)+' kg' : '-'}</div></div>
+        <div class='stat'><div class='lbl'>合計運動</div><div class='big'>${totalKcal} kcal</div></div>
+        <div class='stat'><div class='lbl'>記録達成率</div><div class='big'>${achievementRate}%</div></div>
+      </div>
+    </div>
+    <div class='card'>
+      <h2 style='font-size:15px'>先週との比較</h2>
+      <p class='report-text'>${comparisonText}</p>
+    </div>
+    <div class='card'>
+      <h2>日別記録</h2>
+      <div class='list'>${[...asc].reverse().map(x=>{
+        const total = (+x.cardio||0) + (+x.strength||0);
+        const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
+        return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
+      }).join('')}</div>
+    </div>
+  `;
 }
 
 r_date.value = localDateStr();
