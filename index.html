@@ -12,57 +12,21 @@
   ============================================================
   減量プロジェクト - index.html
   Ver.1.0.0
-
-  構成:
-    - ホーム画面   ... 実装済み(目標までの進捗)
-    - 記録画面     ... 実装済み(体重・運動ログ + localStorage保存)
-    - 分析画面     ... 実装済み(週タブ自動生成 + 体重推移グラフ)
-    - レポート画面 ... 土台のみ(次回実装予定)
-    - 設定画面     ... 土台のみ(次回実装予定)
-
-  今は <style> と <script> をこのファイル内に直書きしていますが、
-  クラス名/ID構成はそのまま style.css / app.js に切り出せるように
-  設計しています(次回以降で分離予定)。
   ============================================================
 -->
 
 <style>
-/* ===== Design Tokens ===== */
 :root{
-  --bg:#f2f2f7;
-  --card:#ffffff;
-  --accent:#0a84ff;
-  --accent-soft:#e8f3ff;
-  --good:#30d158;
-  --text:#111111;
-  --sub:#6e6e73;
-  --line:#e5e5ea;
-  --radius-lg:24px;
-  --radius-md:16px;
-  --radius-sm:12px;
+  --bg:#f2f2f7;--card:#ffffff;--accent:#0a84ff;--accent-soft:#e8f3ff;--good:#30d158;
+  --text:#111111;--sub:#6e6e73;--line:#e5e5ea;--radius-lg:24px;--radius-md:16px;--radius-sm:12px;
 }
-
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans',sans-serif;background:var(--bg);color:var(--text)}
 
-/* ===== App Shell ===== */
-#app{
-  max-width:430px;
-  margin:0 auto;
-  min-height:100%;
-  position:relative;
-  padding-bottom:calc(env(safe-area-inset-bottom) + 84px);
-}
+#app{max-width:430px;margin:0 auto;min-height:100%;position:relative;padding-bottom:calc(env(safe-area-inset-bottom) + 84px)}
 
-.topbar{
-  padding:max(env(safe-area-inset-top),20px) 60px 8px 20px;
-}
+.topbar{padding:max(env(safe-area-inset-top),20px) 60px 8px 20px}
 .topbar h1{font-size:28px;margin:0;letter-spacing:-.02em}
 .topbar .ver{font-size:11px;color:var(--sub);font-weight:600;margin-top:3px}
 
@@ -70,18 +34,10 @@ body{
 .screen.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* ===== Cards ===== */
-.card{
-  background:var(--card);
-  border-radius:var(--radius-lg);
-  padding:20px;
-  margin:12px 0;
-  box-shadow:0 6px 20px rgba(0,0,0,.06);
-}
+.card{background:var(--card);border-radius:var(--radius-lg);padding:20px;margin:12px 0;box-shadow:0 6px 20px rgba(0,0,0,.06)}
 .card h2{margin:0 0 14px;font-size:17px}
 .card .sub{color:var(--sub);font-size:13px;margin-top:-8px;margin-bottom:14px}
 
-/* ===== Home: progress ===== */
 .progress-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
 .progress-head .now{font-size:36px;font-weight:800;letter-spacing:-.02em}
 .progress-head .unit{font-size:16px;color:var(--sub);font-weight:600;margin-left:2px}
@@ -99,16 +55,12 @@ body{
 .stat .lbl{font-size:12px;color:var(--sub);margin-bottom:4px}
 .stat .big{font-size:22px;font-weight:700}
 
-/* ===== Record screen (recycled from training log) ===== */
 label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .field{display:flex;align-items:center;gap:12px;height:60px;border:1px solid var(--line);border-radius:var(--radius-md);padding:0 16px}
 .field input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:26px;font-weight:700;font-family:inherit;color:var(--text)}
 .field .unit{flex:0 0 50px;text-align:right;color:var(--sub);font-weight:600;font-size:14px}
 
-.btn-primary{
-  width:100%;height:54px;border:0;border-radius:var(--radius-md);
-  background:var(--accent);color:#fff;font-size:17px;font-weight:700;margin-top:16px;
-}
+.btn-primary{width:100%;height:54px;border:0;border-radius:var(--radius-md);background:var(--accent);color:#fff;font-size:17px;font-weight:700;margin-top:16px}
 .btn-primary:active{opacity:.85}
 
 .list{margin-top:4px}
@@ -116,96 +68,37 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .row:last-child{border-bottom:0}
 .row .d{color:var(--sub)}
 
-/* ===== Placeholder screens (分析 / レポート / 設定) ===== */
-.placeholder{
-  text-align:center;
-  padding:60px 20px;
-  color:var(--sub);
-}
+.placeholder{text-align:center;padding:60px 20px;color:var(--sub)}
 .placeholder .icon{width:44px;height:44px;margin:0 auto 14px;color:var(--sub);opacity:.55}
 .placeholder .icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .placeholder .title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
 .placeholder .desc{font-size:13px;line-height:1.6}
 
-/* ===== Analysis: weekly tabs ===== */
-.week-tabs{
-  display:flex;gap:8px;overflow-x:auto;
-  padding:4px 2px 14px;
-  scrollbar-width:none;-ms-overflow-style:none;
-}
+.week-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 14px;scrollbar-width:none;-ms-overflow-style:none}
 .week-tabs::-webkit-scrollbar{display:none}
-.week-pill{
-  flex:0 0 auto;
-  padding:9px 16px;
-  border-radius:999px;
-  background:#eef0f3;
-  color:var(--sub);
-  font-size:13px;font-weight:700;
-  border:0;font-family:inherit;
-  white-space:nowrap;
-}
+.week-pill{flex:0 0 auto;padding:9px 16px;border-radius:999px;background:#eef0f3;color:var(--sub);font-size:13px;font-weight:700;border:0;font-family:inherit;white-space:nowrap}
 .week-pill.active{background:var(--accent);color:#fff}
 
 .chart-wrap{width:100%;height:170px}
 .chart-empty{text-align:center;padding:36px 0;color:var(--sub);font-size:13px}
 
-/* ===== FAB (+ button) ===== */
 .fab-wrap{position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:15}
-.fab-add{
-  position:absolute;
-  top:max(env(safe-area-inset-top),20px);
-  right:16px;
-  width:34px;height:34px;
-  border-radius:50%;
-  background:var(--accent);
-  border:0;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 12px rgba(10,132,255,.35);
-  pointer-events:auto;
-}
+.fab-add{position:absolute;top:max(env(safe-area-inset-top),20px);right:16px;width:34px;height:34px;border-radius:50%;background:var(--accent);border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(10,132,255,.35);pointer-events:auto}
 .fab-add svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round}
 
-/* ===== Today's checklist & training menu ===== */
 .todo-list{display:flex;flex-direction:column}
-.todo-item{
-  display:flex;align-items:center;gap:10px;
-  width:100%;padding:8px 2px;border:0;background:none;
-  font-family:inherit;font-size:12.5px;color:var(--text);text-align:left;
-}
-.todo-check{
-  width:19px;height:19px;border-radius:50%;
-  border:2px solid var(--line);flex:0 0 auto;
-  display:flex;align-items:center;justify-content:center;
-}
+.todo-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 2px;border:0;background:none;font-family:inherit;font-size:12.5px;color:var(--text);text-align:left}
+.todo-check{width:19px;height:19px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center}
 .todo-item.done .todo-check{background:var(--good);border-color:var(--good)}
 .todo-check svg{display:none;width:11px;height:11px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .todo-item.done .todo-check svg{display:block}
-.todo-item.done span:last-child{color:var(--sub);text-decoration:line-through}
+.todo-item.done .todo-label{color:var(--sub)}
 
-/* ===== Toast ===== */
-#toast{
-  position:fixed;top:20px;left:50%;transform:translateX(-50%);
-  background:#222;color:#fff;padding:10px 16px;border-radius:999px;
-  opacity:0;transition:.3s;pointer-events:none;z-index:20;font-size:14px;
-}
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:.3s;pointer-events:none;z-index:20;font-size:14px}
 #toast.err{background:#ff3b30}
 
-/* ===== Bottom Tab Bar ===== */
-.tabbar{
-  position:fixed;left:0;right:0;bottom:0;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  border-top:1px solid var(--line);
-  padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);
-  display:flex;
-  max-width:430px;margin:0 auto;
-  z-index:10;
-}
-.tab{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
-  background:none;border:0;padding:6px 0;color:var(--sub);font-size:10px;font-weight:600;font-family:inherit;
-}
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);display:flex;max-width:430px;margin:0 auto;z-index:10}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:6px 0;color:var(--sub);font-size:10px;font-weight:600;font-family:inherit}
 .tab .ic{width:24px;height:24px;display:block}
 .tab .ic svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tab.active{color:var(--accent)}
@@ -228,7 +121,6 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     <div class='ver'>Ver.1.0.0</div>
   </div>
 
-  <!-- ============ ホーム画面 ============ -->
   <section class='screen active' id='screen-home'>
     <div class='card'>
       <div class='progress-head'>
@@ -255,7 +147,6 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     </div>
   </section>
 
-  <!-- ============ 記録画面 ============ -->
   <section class='screen' id='screen-record'>
     <div class='card'>
       <h2>今日の記録</h2>
@@ -276,13 +167,11 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     </div>
   </section>
 
-  <!-- ============ 分析画面 ============ -->
   <section class='screen' id='screen-analysis'>
     <div class='week-tabs' id='weekTabs'></div>
     <div id='weekDetail'></div>
   </section>
 
-  <!-- ============ レポート画面(土台) ============ -->
   <section class='screen' id='screen-report'>
     <div class='card placeholder'>
       <div class='icon'><svg viewBox='0 0 24 24'><path d='M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'/><path d='M14 3v4h4'/><path d='M9 13h6M9 16.5h6M9 9.5h2'/></svg></div>
@@ -291,10 +180,9 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     </div>
   </section>
 
-  <!-- ============ 設定画面(土台) ============ -->
   <section class='screen' id='screen-settings'>
     <div class='card placeholder'>
-      <div class='icon'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='3'/><path d='M12 3v2.2M12 18.8V21M4.9 4.9l1.55 1.55M17.55 17.55 19.1 19.1M3 12h2.2M18.8 12H21M4.9 19.1l1.55-1.55M17.55 6.45 19.1 4.9'/></svg></div>
+      <div class='icon'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='3'/><path d='M12 3 15.1 6.63 19.79 7.5 18.2 12 19.79 16.5 15.1 17.37 12 21 8.9 17.37 4.21 16.5 5.8 12 4.21 7.5 8.9 6.63Z'/></svg></div>
       <div class='title'>設定画面は準備中です</div>
       <div class='desc'>目標体重・開始体重・データのエクスポート/インポートを<br>次のアップデートで実装予定です。</div>
     </div>
@@ -302,7 +190,6 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 
 </div>
 
-<!-- ============ Bottom Tab Bar ============ -->
 <nav class='tabbar'>
   <button class='tab active' data-screen='home' data-label='ホーム' onclick='switchScreen("home")'>
     <span class='ic'><svg viewBox='0 0 24 24'><path d='M3 11.5 12 4l9 7.5'/><path d='M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V19a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9'/></svg></span>ホーム
@@ -317,19 +204,17 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     <span class='ic'><svg viewBox='0 0 24 24'><path d='M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z'/><path d='M14 3v4h4'/><path d='M9 13h6M9 16.5h6M9 9.5h2'/></svg></span>レポート
   </button>
   <button class='tab' data-screen='settings' data-label='設定' onclick='switchScreen("settings")'>
-    <span class='ic'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='3'/><path d='M12 3v2.2M12 18.8V21M4.9 4.9l1.55 1.55M17.55 17.55 19.1 19.1M3 12h2.2M18.8 12H21M4.9 19.1l1.55-1.55M17.55 6.45 19.1 4.9'/></svg></span>設定
+    <span class='ic'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='3'/><path d='M12 3 15.1 6.63 19.79 7.5 18.2 12 19.79 16.5 15.1 17.37 12 21 8.9 17.37 4.21 16.5 5.8 12 4.21 7.5 8.9 6.63Z'/></svg></span>設定
   </button>
 </nav>
 
 <script>
-/* ===== Config (将来的に設定画面から編集可能にする) ===== */
 const CONFIG = {
   goalWeight: 75.0,
-  startWeight: null // 初回記録から自動セットされる
+  startWeight: null
 };
 const STORE_KEY = 'trainingEntries';
 
-/* ===== Screen switching ===== */
 const TITLES = {home:'ホーム',record:'記録',analysis:'分析',report:'レポート',settings:'設定'};
 
 function switchScreen(name){
@@ -354,7 +239,6 @@ function goToRecordField(key){
   setTimeout(()=>{ const el = document.getElementById(map[key]); if(el) el.focus(); }, 50);
 }
 
-/* ===== Storage helpers ===== */
 function loadAll(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
@@ -374,10 +258,9 @@ function saveAll(obj){
   }
 }
 function sortedEntries(){
-  return Object.values(loadAll()).sort((a,b)=> a.date < b.date ? 1 : -1); // 新しい順
+  return Object.values(loadAll()).sort((a,b)=> a.date < b.date ? 1 : -1);
 }
 
-/* 端末のローカル日付を YYYY-MM-DD で取得(toISOString はUTC変換されるため使わない) */
 function localDateStr(d){
   d = d || new Date();
   const y = d.getFullYear();
@@ -393,7 +276,6 @@ function showToast(msg, isErr){
   setTimeout(()=>{ toast.style.opacity = 0; }, 1500);
 }
 
-/* ===== Home screen ===== */
 function refreshHome(){
   const entries = sortedEntries();
   const weighted = entries.filter(x => x.weight !== null && x.weight !== '');
@@ -447,10 +329,9 @@ function refreshHome(){
   homeLastDate.textContent = entries[0].date;
 }
 
-/* 直近の体重変化ペースから目標到達の目安日を概算する */
 function estimateForecast(weighted, latest, goal){
   if(latest <= goal) return '達成済み';
-  const asc = [...weighted].reverse(); // 古い→新しい
+  const asc = [...weighted].reverse();
   const latestDate = asc[asc.length-1].date;
   let win = asc.filter(x => (new Date(latestDate) - new Date(x.date)) / 86400000 <= 21);
   if(win.length < 2) win = asc;
@@ -459,7 +340,7 @@ function estimateForecast(weighted, latest, goal){
   const f = win[0], l = win[win.length-1];
   const days = (new Date(l.date) - new Date(f.date)) / 86400000;
   if(days <= 0) return '算出には記録が足りません';
-  const ratePerDay = (+l.weight - +f.weight) / days; // 負の値が減量ペース
+  const ratePerDay = (+l.weight - +f.weight) / days;
 
   if(ratePerDay >= -0.005) return 'ペース算出中';
 
@@ -469,7 +350,6 @@ function estimateForecast(weighted, latest, goal){
   return (target.getMonth()+1)+'/'+target.getDate()+'頃';
 }
 
-/* ===== Today's checklist (auto-checked from today's record) ===== */
 function refreshTodo(){
   const all = loadAll();
   const today = localDateStr();
@@ -483,12 +363,11 @@ function refreshTodo(){
   todoList.innerHTML = items.map(it => `
     <button class='todo-item ${it.done?'done':''}' onclick='goToRecordField("${it.key}")'>
       <span class='todo-check'><svg viewBox='0 0 24 24'><path d='M5 13l4 4L19 7'/></svg></span>
-      <span>${it.label}</span>
+      <span class='todo-label'>${it.label}</span>
     </button>
   `).join('');
 }
 
-/* ===== Record screen ===== */
 function refreshRecord(){
   const entries = sortedEntries();
   recordList.innerHTML = entries.slice(0,10).map(x=>{
@@ -527,12 +406,11 @@ function saveEntry(){
   }
 }
 
-/* ===== Analysis screen ===== */
-let currentWeekKey = null; // 選択中の週(月曜日の日付)
+let currentWeekKey = null;
 
 function weekStart(dateStr){
   const d = new Date(dateStr+'T00:00:00');
-  const dow = (d.getDay()+6)%7; // 月曜=0 ... 日曜=6
+  const dow = (d.getDay()+6)%7;
   d.setDate(d.getDate()-dow);
   return localDateStr(d);
 }
@@ -545,7 +423,7 @@ function weekLabel(wk){
 }
 
 function refreshAnalysis(selectedWeek){
-  const entries = sortedEntries(); // 新しい順
+  const entries = sortedEntries();
   if(!entries.length){
     weekTabs.innerHTML = '';
     weekDetail.innerHTML = `<div class='card placeholder'>
@@ -561,7 +439,7 @@ function refreshAnalysis(selectedWeek){
     const wk = weekStart(e.date);
     (groups[wk] = groups[wk] || []).push(e);
   });
-  const weekKeys = Object.keys(groups).sort((a,b) => a < b ? 1 : -1); // 新しい週が先頭
+  const weekKeys = Object.keys(groups).sort((a,b) => a < b ? 1 : -1);
 
   currentWeekKey = (selectedWeek && groups[selectedWeek]) ? selectedWeek : weekKeys[0];
 
@@ -625,7 +503,6 @@ function drawWeightChart(weighted){
   const pathD = pts.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
   const dots = pts.map(p => `<circle cx='${p[0].toFixed(1)}' cy='${p[1].toFixed(1)}' r='4' style='fill:var(--accent)'/>`).join('');
 
-  /* 目盛り(最大・中間・最小の3本) */
   const ticks = [rawMax, (rawMax+rawMin)/2, rawMin];
   const grid = ticks.map(v => {
     const y = yFor(v);
@@ -633,12 +510,10 @@ function drawWeightChart(weighted){
       <text x='${padL-6}' y='${(y+3).toFixed(1)}' font-size='9' fill='var(--sub)' text-anchor='end'>${v.toFixed(1)}</text>`;
   }).join('');
 
-  /* 各点の実測値ラベル */
   const valueLabels = weighted.map((x,i) =>
     `<text x='${pts[i][0].toFixed(1)}' y='${(pts[i][1]-9).toFixed(1)}' font-size='9' font-weight='700' fill='var(--text)' text-anchor='middle'>${(+x.weight).toFixed(1)}</text>`
   ).join('');
 
-  /* 曜日ラベル */
   const dayLabels = weighted.map((x,i) => {
     const d = new Date(x.date+'T00:00:00');
     const wd = ['日','月','火','水','木','金','土'][d.getDay()];
@@ -654,7 +529,6 @@ function drawWeightChart(weighted){
   </svg>`;
 }
 
-/* ===== Init ===== */
 r_date.value = localDateStr();
 loadEntryToForm();
 refreshHome();
