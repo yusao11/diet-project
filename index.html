@@ -11,25 +11,73 @@
 
 <style>
 :root{
-  --bg:#f2f2f7;--card:#ffffff;--accent:#0a84ff;--accent-soft:#e8f3ff;--good:#30d158;
-  --text:#111111;--sub:#6e6e73;--line:#e5e5ea;--radius-lg:24px;--radius-md:16px;--radius-sm:12px;
+  --bg:#f2f2f7;
+  --card:#ffffff;
+  --accent:#0a84ff;
+  --accent-soft:#e8f3ff;
+  --good:#30d158;
+  --text:#111111;
+  --sub:#6e6e73;
+  --line:#e5e5ea;
+  --radius-lg:24px;
+  --radius-md:16px;
+  --radius-sm:12px;
 }
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans',sans-serif;background:var(--bg);color:var(--text)}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow:hidden;
+}
 
-#app{max-width:430px;margin:0 auto;min-height:100%;position:relative;padding-bottom:calc(env(safe-area-inset-bottom) + 84px)}
+#app{
+  max-width:430px;
+  margin:0 auto;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
 
-.topbar{padding:max(env(safe-area-inset-top),20px) 60px 8px 20px}
+.topbar{
+  flex:0 0 auto;
+  padding:max(env(safe-area-inset-top),20px) 60px 8px 20px;
+}
 .topbar h1{font-size:28px;margin:0;letter-spacing:-.02em}
 .topbar .ver{font-size:11px;color:var(--sub);font-weight:600;margin-top:3px}
 
-.screens-wrap{position:relative;overflow-x:hidden}
-.screen{display:none;padding:8px 16px 16px}
-.screen.active{display:block}
-.screen.sliding{position:absolute;top:0;left:0;right:0;will-change:transform}
+.screens-wrap{
+  flex:1 1 auto;
+  display:flex;
+  overflow-x:scroll;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.screens-wrap::-webkit-scrollbar{display:none}
+.screen{
+  flex:0 0 100%;
+  width:100%;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
+  height:100%;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:8px 16px calc(env(safe-area-inset-bottom) + 84px);
+}
 
-.card{background:var(--card);border-radius:var(--radius-lg);padding:20px;margin:12px 0;box-shadow:0 6px 20px rgba(0,0,0,.06)}
+.card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  padding:20px;
+  margin:12px 0;
+  box-shadow:0 6px 20px rgba(0,0,0,.06);
+}
 .card h2{margin:0 0 14px;font-size:17px}
 .card .sub{color:var(--sub);font-size:13px;margin-top:-8px;margin-bottom:14px}
 
@@ -55,7 +103,10 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .field input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:26px;font-weight:700;font-family:inherit;color:var(--text)}
 .field .unit{flex:0 0 50px;text-align:right;color:var(--sub);font-weight:600;font-size:14px}
 
-.btn-primary{width:100%;height:54px;border:0;border-radius:var(--radius-md);background:var(--accent);color:#fff;font-size:17px;font-weight:700;margin-top:16px}
+.btn-primary{
+  width:100%;height:54px;border:0;border-radius:var(--radius-md);
+  background:var(--accent);color:#fff;font-size:17px;font-weight:700;margin-top:16px;
+}
 .btn-primary:active{opacity:.85}
 
 .list{margin-top:4px}
@@ -63,47 +114,108 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .row:last-child{border-bottom:0}
 .row .d{color:var(--sub)}
 
-.placeholder{text-align:center;padding:60px 20px;color:var(--sub)}
+.placeholder{
+  text-align:center;
+  padding:60px 20px;
+  color:var(--sub);
+}
 .placeholder .icon{width:44px;height:44px;margin:0 auto 14px;color:var(--sub);opacity:.55}
 .placeholder .icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .placeholder .title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
 .placeholder .desc{font-size:13px;line-height:1.6}
 
-.week-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 14px;scrollbar-width:none;-ms-overflow-style:none}
+.week-tabs{
+  display:flex;gap:8px;overflow-x:auto;
+  padding:4px 2px 14px;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
 .week-tabs::-webkit-scrollbar{display:none}
-.week-pill{flex:0 0 auto;padding:9px 16px;border-radius:999px;background:#eef0f3;color:var(--sub);font-size:13px;font-weight:700;border:0;font-family:inherit;white-space:nowrap}
+.week-pill{
+  flex:0 0 auto;
+  padding:9px 16px;
+  border-radius:999px;
+  background:#eef0f3;
+  color:var(--sub);
+  font-size:13px;font-weight:700;
+  border:0;font-family:inherit;
+  white-space:nowrap;
+}
 .week-pill.active{background:var(--accent);color:#fff}
 
-.chart-wrap{width:100%;height:170px}
+.chart-wrap{width:100%;height:184px}
 .chart-empty{text-align:center;padding:36px 0;color:var(--sub);font-size:13px}
 
 .report-lead{font-size:14.5px;line-height:1.7;color:var(--text);margin:0}
 .report-text{font-size:13px;line-height:1.7;color:var(--sub);margin:0}
 
 .btnrow{display:flex;gap:10px;margin-top:14px}
-.btn2{flex:1;height:46px;border:0;border-radius:14px;background:#eef2f7;color:var(--accent);font-size:15px;font-weight:600;font-family:inherit}
+.btn2{
+  flex:1;height:46px;border:0;border-radius:14px;
+  background:#eef2f7;color:var(--accent);
+  font-size:15px;font-weight:600;font-family:inherit;
+}
 .btn2:active{opacity:.8}
-.btn-danger{width:100%;height:50px;border:0;border-radius:var(--radius-md);background:#ff3b30;color:#fff;font-size:15px;font-weight:700;margin-top:14px;font-family:inherit}
+.btn-danger{
+  width:100%;height:50px;border:0;border-radius:var(--radius-md);
+  background:#ff3b30;color:#fff;font-size:15px;font-weight:700;
+  margin-top:14px;font-family:inherit;
+}
 .btn-danger:active{opacity:.85}
 #settingsFileInput{display:none}
 
 .fab-wrap{position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:15}
-.fab-add{position:absolute;top:max(env(safe-area-inset-top),20px);right:16px;width:34px;height:34px;border-radius:50%;background:var(--accent);border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(10,132,255,.35);pointer-events:auto}
+.fab-add{
+  position:absolute;
+  top:max(env(safe-area-inset-top),20px);
+  right:16px;
+  width:34px;height:34px;
+  border-radius:50%;
+  background:var(--accent);
+  border:0;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(10,132,255,.35);
+  pointer-events:auto;
+}
 .fab-add svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round}
 
 .todo-list{display:flex;flex-direction:column}
-.todo-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 2px;border:0;background:none;font-family:inherit;font-size:12.5px;color:var(--text);text-align:left}
-.todo-check{width:19px;height:19px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+.todo-item{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:8px 2px;border:0;background:none;
+  font-family:inherit;font-size:12.5px;color:var(--text);text-align:left;
+}
+.todo-check{
+  width:19px;height:19px;border-radius:50%;
+  border:2px solid var(--line);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+}
 .todo-item.done .todo-check{background:var(--good);border-color:var(--good)}
 .todo-check svg{display:none;width:11px;height:11px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .todo-item.done .todo-check svg{display:block}
 .todo-item.done .todo-label{color:var(--sub)}
 
-#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:.3s;pointer-events:none;z-index:20;font-size:14px}
+#toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:#222;color:#fff;padding:10px 16px;border-radius:999px;
+  opacity:0;transition:.3s;pointer-events:none;z-index:20;font-size:14px;
+}
 #toast.err{background:#ff3b30}
 
-.tabbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);display:flex;max-width:430px;margin:0 auto;z-index:10}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:6px 0;color:var(--sub);font-size:10px;font-weight:600;font-family:inherit}
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--line);
+  padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);
+  display:flex;
+  max-width:430px;margin:0 auto;
+  z-index:10;
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:none;border:0;padding:6px 0;color:var(--sub);font-size:10px;font-weight:600;font-family:inherit;
+}
 .tab .ic{width:24px;height:24px;display:block}
 .tab .ic svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tab.active{color:var(--accent)}
@@ -128,7 +240,7 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 
   <div class='screens-wrap' id='screensWrap'>
 
-  <section class='screen active' id='screen-home'>
+  <section class='screen' id='screen-home'>
     <div class='card'>
       <div class='progress-head'>
         <div><span class='now' id='homeNow'>-</span><span class='unit'>kg</span><div class='now-date' id='homeDateLbl'>記録なし</div></div>
@@ -259,54 +371,11 @@ function loadSettings(){
 
 const TITLES = {home:'ホーム',record:'記録',analysis:'分析',report:'レポート',settings:'設定'};
 const SCREEN_ORDER = ['home','record','analysis','report','settings'];
-let isSwitching = false;
-
-function animateToScreen(name){
-  const newEl = document.getElementById('screen-'+name);
-  const oldEl = document.querySelector('.screen.active');
-
-  if(!oldEl || oldEl === newEl || isSwitching){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    newEl.classList.add('active');
-    return;
-  }
-
-  const oldIdx = SCREEN_ORDER.indexOf(oldEl.id.replace('screen-',''));
-  const newIdx = SCREEN_ORDER.indexOf(name);
-  const dir = newIdx > oldIdx ? 1 : -1;
-
-  isSwitching = true;
-  oldEl.classList.remove('active');
-  oldEl.classList.add('sliding');
-  newEl.classList.add('sliding');
-  oldEl.style.display = 'block';
-  newEl.style.display = 'block';
-
-  const duration = 320;
-  const easing = 'cubic-bezier(.22,.68,0,1)';
-
-  const oldAnim = oldEl.animate(
-    [{ transform: 'translateX(0%)' }, { transform: `translateX(${-dir*100}%)` }],
-    { duration, easing, fill: 'forwards' }
-  );
-  newEl.animate(
-    [{ transform: `translateX(${dir*100}%)` }, { transform: 'translateX(0%)' }],
-    { duration, easing, fill: 'forwards' }
-  );
-
-  oldAnim.onfinish = () => {
-    oldEl.classList.remove('sliding');
-    oldEl.style.display = 'none';
-    oldEl.style.transform = '';
-
-    newEl.classList.remove('sliding');
-    newEl.style.transform = '';
-    newEl.classList.add('active');
-    isSwitching = false;
-  };
-}
+let currentScreenName = null;
 
 function applyScreenChrome(name){
+  if(name === currentScreenName) return;
+  currentScreenName = name;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
   screenTitle.textContent = TITLES[name];
   fabAdd.style.display = ['home','analysis','report'].includes(name) ? 'flex' : 'none';
@@ -319,19 +388,30 @@ function applyScreenChrome(name){
 }
 
 function switchScreen(name){
-  animateToScreen(name);
-  applyScreenChrome(name);
+  const idx = SCREEN_ORDER.indexOf(name);
+  if(idx < 0) return;
+  screensWrap.scrollTo({ left: idx * screensWrap.clientWidth, behavior: 'smooth' });
 }
+
+let scrollSettleTimer = null;
+screensWrap.addEventListener('scroll', () => {
+  if(scrollSettleTimer) clearTimeout(scrollSettleTimer);
+  scrollSettleTimer = setTimeout(() => {
+    const idx = Math.round(screensWrap.scrollLeft / screensWrap.clientWidth);
+    const name = SCREEN_ORDER[idx];
+    if(name) applyScreenChrome(name);
+  }, 90);
+}, {passive:true});
 
 function goToRecordDate(){
   switchScreen('record');
-  setTimeout(()=>{ r_date.focus(); }, 50);
+  setTimeout(()=>{ r_date.focus(); }, 350);
 }
 
 function goToRecordField(key){
   switchScreen('record');
   const map = {weight:'r_weight', cardio:'r_cardio', strength:'r_strength'};
-  setTimeout(()=>{ const el = document.getElementById(map[key]); if(el) el.focus(); }, 50);
+  setTimeout(()=>{ const el = document.getElementById(map[key]); if(el) el.focus(); }, 350);
 }
 
 function loadAll(){
@@ -605,8 +685,8 @@ function drawWeightChart(weighted){
     wrap.innerHTML = `<div class='chart-empty'>この週の体重記録がありません</div>`;
     return;
   }
-  const W=300, H=170;
-  const padL=34, padR=10, padT=18, padB=22;
+  const W=300, H=184;
+  const padL=34, padR=10, padT=18, padB=34;
   const values = weighted.map(x => +x.weight);
   const rawMin = Math.min(...values), rawMax = Math.max(...values);
   const cushion = Math.max((rawMax-rawMin)*0.25, 0.3);
@@ -634,7 +714,9 @@ function drawWeightChart(weighted){
   const dayLabels = weighted.map((x,i) => {
     const d = new Date(x.date+'T00:00:00');
     const wd = ['日','月','火','水','木','金','土'][d.getDay()];
-    return `<text x='${pts[i][0].toFixed(1)}' y='${H-6}' font-size='9' fill='var(--sub)' text-anchor='middle'>${wd}</text>`;
+    const md = (d.getMonth()+1)+'/'+d.getDate();
+    return `<text x='${pts[i][0].toFixed(1)}' y='${H-20}' font-size='9' fill='var(--sub)' text-anchor='middle'>${md}</text>
+      <text x='${pts[i][0].toFixed(1)}' y='${H-8}' font-size='9' fill='var(--sub)' text-anchor='middle'>(${wd})</text>`;
   }).join('');
 
   wrap.innerHTML = `<svg viewBox='0 0 ${W} ${H}' style='width:100%;height:100%'>
@@ -873,124 +955,7 @@ loadSettings();
 loadEntryToForm();
 refreshHome();
 refreshRecord();
-
-let dragState = null;
-
-function swipeTouchStart(e){
-  if(isSwitching) return;
-  if(e.target.closest('.week-tabs, .list')) return;
-  const t = e.touches[0];
-  dragState = { startX: t.clientX, startY: t.clientY, locked: null, dragging: false };
-}
-
-function swipeTouchMove(e){
-  if(!dragState) return;
-  const t = e.touches[0];
-  const dx = t.clientX - dragState.startX;
-  const dy = t.clientY - dragState.startY;
-
-  if(dragState.locked === null){
-    if(Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-    dragState.locked = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y';
-
-    if(dragState.locked === 'x'){
-      const oldEl = document.querySelector('.screen.active');
-      const oldIdx = SCREEN_ORDER.indexOf(oldEl.id.replace('screen-',''));
-      const dir = dx < 0 ? 1 : -1;
-      const newIdx = oldIdx + dir;
-      if(newIdx < 0 || newIdx >= SCREEN_ORDER.length){
-        dragState.locked = 'blocked';
-        return;
-      }
-      const newEl = document.getElementById('screen-'+SCREEN_ORDER[newIdx]);
-
-      isSwitching = true;
-      oldEl.classList.add('sliding');
-      newEl.classList.add('sliding');
-      oldEl.style.display = 'block';
-      newEl.style.display = 'block';
-      newEl.style.transform = `translateX(${dir*100}%)`;
-
-      dragState.oldEl = oldEl;
-      dragState.newEl = newEl;
-      dragState.newIdx = newIdx;
-      dragState.dir = dir;
-      dragState.width = screensWrap.getBoundingClientRect().width || window.innerWidth;
-      dragState.dragging = true;
-    }
-  }
-
-  if(dragState.locked !== 'x' || !dragState.dragging) return;
-
-  e.preventDefault();
-
-  const clampedDx = Math.max(Math.min(dx, dragState.width), -dragState.width);
-  dragState.oldEl.style.transform = `translateX(${clampedDx}px)`;
-  dragState.newEl.style.transform = `translateX(${dragState.dir*dragState.width + clampedDx}px)`;
-  dragState.lastDx = clampedDx;
-}
-
-function swipeTouchEnd(){
-  if(!dragState){ return; }
-  if(dragState.locked !== 'x' || !dragState.dragging){ dragState = null; return; }
-
-  const { oldEl, newEl, dir, width, newIdx } = dragState;
-  const dx = dragState.lastDx || 0;
-  const commit = Math.abs(dx) > width * 0.28;
-
-  const duration = 220;
-  const easing = 'cubic-bezier(.22,.68,0,1)';
-
-  if(commit){
-    oldEl.animate(
-      [{ transform: `translateX(${dx}px)` }, { transform: `translateX(${-dir*width}px)` }],
-      { duration, easing, fill:'forwards' }
-    );
-    newEl.animate(
-      [{ transform: `translateX(${dir*width+dx}px)` }, { transform: 'translateX(0px)' }],
-      { duration, easing, fill:'forwards' }
-    ).onfinish = () => finishSwipe(oldEl, newEl, SCREEN_ORDER[newIdx]);
-  }else{
-    oldEl.animate(
-      [{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0px)' }],
-      { duration, easing, fill:'forwards' }
-    ).onfinish = () => cancelSwipe(oldEl, newEl);
-    newEl.animate(
-      [{ transform: `translateX(${dir*width+dx}px)` }, { transform: `translateX(${dir*width}px)` }],
-      { duration, easing, fill:'forwards' }
-    );
-  }
-  dragState = null;
-}
-
-function finishSwipe(oldEl, newEl, newName){
-  oldEl.classList.remove('sliding','active');
-  oldEl.style.display = 'none';
-  oldEl.style.transform = '';
-
-  newEl.classList.remove('sliding');
-  newEl.style.transform = '';
-  newEl.classList.add('active');
-
-  isSwitching = false;
-  applyScreenChrome(newName);
-}
-
-function cancelSwipe(oldEl, newEl){
-  oldEl.classList.remove('sliding');
-  oldEl.style.transform = '';
-
-  newEl.classList.remove('sliding');
-  newEl.style.display = 'none';
-  newEl.style.transform = '';
-
-  isSwitching = false;
-}
-
-document.addEventListener('touchstart', swipeTouchStart, {passive:true});
-document.addEventListener('touchmove', swipeTouchMove, {passive:false});
-document.addEventListener('touchend', swipeTouchEnd, {passive:true});
-document.addEventListener('touchcancel', () => { dragState = null; }, {passive:true});
+applyScreenChrome('home');
 </script>
 </body>
 </html>
