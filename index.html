@@ -281,36 +281,29 @@ function animateToScreen(name){
   newEl.classList.add('sliding');
   oldEl.style.display = 'block';
   newEl.style.display = 'block';
-  oldEl.style.transition = 'none';
-  newEl.style.transition = 'none';
-  oldEl.style.transform = 'translateX(0)';
-  newEl.style.transform = `translateX(${dir*100}%)`;
 
-  void newEl.offsetWidth;
+  const duration = 320;
+  const easing = 'cubic-bezier(.22,.68,0,1)';
 
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      const ease = 'transform .32s cubic-bezier(.22,.68,0,1)';
-      oldEl.style.transition = ease;
-      newEl.style.transition = ease;
-      oldEl.style.transform = `translateX(${-dir*100}%)`;
-      newEl.style.transform = 'translateX(0)';
-    });
-  });
+  const oldAnim = oldEl.animate(
+    [{ transform: 'translateX(0%)' }, { transform: `translateX(${-dir*100}%)` }],
+    { duration, easing, fill: 'forwards' }
+  );
+  newEl.animate(
+    [{ transform: `translateX(${dir*100}%)` }, { transform: 'translateX(0%)' }],
+    { duration, easing, fill: 'forwards' }
+  );
 
-  const finish = () => {
+  oldAnim.onfinish = () => {
     oldEl.classList.remove('sliding');
-    oldEl.style.transition = '';
-    oldEl.style.transform = '';
     oldEl.style.display = 'none';
+    oldEl.style.transform = '';
 
     newEl.classList.remove('sliding');
-    newEl.style.transition = '';
     newEl.style.transform = '';
     newEl.classList.add('active');
     isSwitching = false;
   };
-  newEl.addEventListener('transitionend', finish, {once:true});
 }
 
 function switchScreen(name){
@@ -565,6 +558,9 @@ function renderWeekDetail(weekEntries){
   const totalKcal = weekEntries.reduce((s,x) => s + (+x.cardio||0) + (+x.strength||0), 0);
   const avgW = weighted.length ? weighted.reduce((s,x)=>s+ +x.weight,0)/weighted.length : null;
   const change = weighted.length >= 2 ? (+weighted[weighted.length-1].weight - +weighted[0].weight) : null;
+  const activeDays = weekEntries.filter(x =>
+    (x.cardio !== null && x.cardio !== '') || (x.strength !== null && x.strength !== '')
+  ).length;
 
   weekDetail.innerHTML = `
     <div class='card'>
@@ -576,6 +572,7 @@ function renderWeekDetail(weekEntries){
         <div class='stat'><div class='lbl'>週の平均体重</div><div class='big'>${avgW!==null ? avgW.toFixed(1)+' kg' : '-'}</div></div>
         <div class='stat'><div class='lbl'>週内の増減</div><div class='big'>${change!==null ? (change>=0?'+':'')+change.toFixed(1)+' kg' : '-'}</div></div>
         <div class='stat'><div class='lbl'>週内の合計運動</div><div class='big'>${totalKcal} kcal</div></div>
+        <div class='stat'><div class='lbl'>合計運動日数</div><div class='big'>${activeDays} 日</div></div>
       </div>
     </div>
     <div class='card'>
