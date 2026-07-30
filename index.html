@@ -11,73 +11,32 @@
 
 <style>
 :root{
-  --bg:#f2f2f7;
-  --card:#ffffff;
-  --accent:#0a84ff;
-  --accent-soft:#e8f3ff;
-  --good:#30d158;
-  --text:#111111;
-  --sub:#6e6e73;
-  --line:#e5e5ea;
-  --radius-lg:24px;
-  --radius-md:16px;
-  --radius-sm:12px;
+  --bg:#f2f2f7;--card:#ffffff;--accent:#0a84ff;--accent-soft:#e8f3ff;--good:#30d158;
+  --text:#111111;--sub:#6e6e73;--line:#e5e5ea;--radius-lg:24px;--radius-md:16px;--radius-sm:12px;
 }
-
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  overflow:hidden;
-}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Hiragino Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
 
-#app{
-  max-width:430px;
-  margin:0 auto;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  position:relative;
-}
+#app{max-width:430px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
 
-.topbar{
-  flex:0 0 auto;
-  padding:max(env(safe-area-inset-top),20px) 60px 8px 20px;
-}
+.topbar{flex:0 0 auto;padding:max(env(safe-area-inset-top),20px) 60px 8px 20px}
 .topbar h1{font-size:28px;margin:0;letter-spacing:-.02em}
 .topbar .ver{font-size:11px;color:var(--sub);font-weight:600;margin-top:3px}
 
 .screens-wrap{
-  flex:1 1 auto;
-  display:flex;
-  overflow-x:scroll;
-  overflow-y:hidden;
-  scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
+  flex:1 1 auto;display:flex;overflow-x:scroll;overflow-y:hidden;
+  scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
   scrollbar-width:none;-ms-overflow-style:none;
 }
 .screens-wrap::-webkit-scrollbar{display:none}
 .screen{
-  flex:0 0 100%;
-  width:100%;
-  scroll-snap-align:start;
-  scroll-snap-stop:always;
-  height:100%;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
+  flex:0 0 100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;
+  height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
   padding:8px 16px calc(env(safe-area-inset-bottom) + 84px);
 }
 
-.card{
-  background:var(--card);
-  border-radius:var(--radius-lg);
-  padding:20px;
-  margin:12px 0;
-  box-shadow:0 6px 20px rgba(0,0,0,.06);
-}
+.card{background:var(--card);border-radius:var(--radius-lg);padding:20px;margin:12px 0;box-shadow:0 6px 20px rgba(0,0,0,.06)}
 .card h2{margin:0 0 14px;font-size:17px}
 .card .sub{color:var(--sub);font-size:13px;margin-top:-8px;margin-bottom:14px}
 
@@ -103,43 +62,25 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .field input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:26px;font-weight:700;font-family:inherit;color:var(--text)}
 .field .unit{flex:0 0 50px;text-align:right;color:var(--sub);font-weight:600;font-size:14px}
 
-.btn-primary{
-  width:100%;height:54px;border:0;border-radius:var(--radius-md);
-  background:var(--accent);color:#fff;font-size:17px;font-weight:700;margin-top:16px;
-}
+.btn-primary{width:100%;height:54px;border:0;border-radius:var(--radius-md);background:var(--accent);color:#fff;font-size:17px;font-weight:700;margin-top:16px}
 .btn-primary:active{opacity:.85}
 
 .list{margin-top:4px}
-.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
 .row:last-child{border-bottom:0}
+.row-top{display:flex;justify-content:space-between}
 .row .d{color:var(--sub)}
+.row-sub{font-size:11.5px;color:var(--sub);margin-top:3px}
 
-.placeholder{
-  text-align:center;
-  padding:60px 20px;
-  color:var(--sub);
-}
+.placeholder{text-align:center;padding:60px 20px;color:var(--sub)}
 .placeholder .icon{width:44px;height:44px;margin:0 auto 14px;color:var(--sub);opacity:.55}
 .placeholder .icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .placeholder .title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
 .placeholder .desc{font-size:13px;line-height:1.6}
 
-.week-tabs{
-  display:flex;gap:8px;overflow-x:auto;
-  padding:4px 2px 14px;
-  scrollbar-width:none;-ms-overflow-style:none;
-}
+.week-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 14px;scrollbar-width:none;-ms-overflow-style:none}
 .week-tabs::-webkit-scrollbar{display:none}
-.week-pill{
-  flex:0 0 auto;
-  padding:9px 16px;
-  border-radius:999px;
-  background:#eef0f3;
-  color:var(--sub);
-  font-size:13px;font-weight:700;
-  border:0;font-family:inherit;
-  white-space:nowrap;
-}
+.week-pill{flex:0 0 auto;padding:9px 16px;border-radius:999px;background:#eef0f3;color:var(--sub);font-size:13px;font-weight:700;border:0;font-family:inherit;white-space:nowrap}
 .week-pill.active{background:var(--accent);color:#fff}
 
 .chart-wrap{width:100%;height:184px}
@@ -149,73 +90,29 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
 .report-text{font-size:13px;line-height:1.7;color:var(--sub);margin:0}
 
 .btnrow{display:flex;gap:10px;margin-top:14px}
-.btn2{
-  flex:1;height:46px;border:0;border-radius:14px;
-  background:#eef2f7;color:var(--accent);
-  font-size:15px;font-weight:600;font-family:inherit;
-}
+.btn2{flex:1;height:46px;border:0;border-radius:14px;background:#eef2f7;color:var(--accent);font-size:15px;font-weight:600;font-family:inherit}
 .btn2:active{opacity:.8}
-.btn-danger{
-  width:100%;height:50px;border:0;border-radius:var(--radius-md);
-  background:#ff3b30;color:#fff;font-size:15px;font-weight:700;
-  margin-top:14px;font-family:inherit;
-}
+.btn-danger{width:100%;height:50px;border:0;border-radius:var(--radius-md);background:#ff3b30;color:#fff;font-size:15px;font-weight:700;margin-top:14px;font-family:inherit}
 .btn-danger:active{opacity:.85}
 #settingsFileInput{display:none}
 
 .fab-wrap{position:fixed;top:0;left:0;right:0;max-width:430px;margin:0 auto;pointer-events:none;z-index:15}
-.fab-add{
-  position:absolute;
-  top:max(env(safe-area-inset-top),20px);
-  right:16px;
-  width:34px;height:34px;
-  border-radius:50%;
-  background:var(--accent);
-  border:0;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 12px rgba(10,132,255,.35);
-  pointer-events:auto;
-}
+.fab-add{position:absolute;top:max(env(safe-area-inset-top),20px);right:16px;width:34px;height:34px;border-radius:50%;background:var(--accent);border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(10,132,255,.35);pointer-events:auto}
 .fab-add svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round}
 
 .todo-list{display:flex;flex-direction:column}
-.todo-item{
-  display:flex;align-items:center;gap:10px;
-  width:100%;padding:8px 2px;border:0;background:none;
-  font-family:inherit;font-size:12.5px;color:var(--text);text-align:left;
-}
-.todo-check{
-  width:19px;height:19px;border-radius:50%;
-  border:2px solid var(--line);flex:0 0 auto;
-  display:flex;align-items:center;justify-content:center;
-}
+.todo-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 2px;border:0;background:none;font-family:inherit;font-size:12.5px;color:var(--text);text-align:left}
+.todo-check{width:19px;height:19px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center}
 .todo-item.done .todo-check{background:var(--good);border-color:var(--good)}
 .todo-check svg{display:none;width:11px;height:11px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .todo-item.done .todo-check svg{display:block}
 .todo-item.done .todo-label{color:var(--sub)}
 
-#toast{
-  position:fixed;top:20px;left:50%;transform:translateX(-50%);
-  background:#222;color:#fff;padding:10px 16px;border-radius:999px;
-  opacity:0;transition:.3s;pointer-events:none;z-index:20;font-size:14px;
-}
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:.3s;pointer-events:none;z-index:20;font-size:14px}
 #toast.err{background:#ff3b30}
 
-.tabbar{
-  position:fixed;left:0;right:0;bottom:0;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  border-top:1px solid var(--line);
-  padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);
-  display:flex;
-  max-width:430px;margin:0 auto;
-  z-index:10;
-}
-.tab{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
-  background:none;border:0;padding:6px 0;color:var(--sub);font-size:10px;font-weight:600;font-family:inherit;
-}
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);display:flex;max-width:430px;margin:0 auto;z-index:10}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:6px 0;color:var(--sub);font-size:10px;font-weight:600;font-family:inherit}
 .tab .ic{width:24px;height:24px;display:block}
 .tab .ic svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tab.active{color:var(--accent)}
@@ -387,10 +284,24 @@ function applyScreenChrome(name){
   if(name==='settings') refreshSettings();
 }
 
+function animateScrollTo(targetLeft, duration){
+  const start = screensWrap.scrollLeft;
+  const change = targetLeft - start;
+  if(change === 0) return;
+  const startTime = performance.now();
+  function step(now){
+    const t = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    screensWrap.scrollLeft = start + change * eased;
+    if(t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
 function switchScreen(name){
   const idx = SCREEN_ORDER.indexOf(name);
   if(idx < 0) return;
-  screensWrap.scrollTo({ left: idx * screensWrap.clientWidth, behavior: 'smooth' });
+  animateScrollTo(idx * screensWrap.clientWidth, 200);
 }
 
 let scrollSettleTimer = null;
@@ -442,6 +353,21 @@ function localDateStr(d){
   const m = String(d.getMonth()+1).padStart(2,'0');
   const day = String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
+}
+
+function formatEntryRow(x){
+  const cardio = (x.cardio !== null && x.cardio !== '') ? +x.cardio : 0;
+  const strength = (x.strength !== null && x.strength !== '') ? +x.strength : 0;
+  const total = cardio + strength;
+  const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
+  const hasExercise = (x.cardio !== null && x.cardio !== '') || (x.strength !== null && x.strength !== '');
+  const sub = hasExercise
+    ? `<div class='row-sub'>サイクリング ${cardio}kcal ・ 筋トレ ${strength}kcal</div>`
+    : '';
+  return `<div class='row'>
+    <div class='row-top'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>
+    ${sub}
+  </div>`;
 }
 
 function showToast(msg, isErr){
@@ -551,11 +477,8 @@ function refreshTodo(){
 
 function refreshRecord(){
   const entries = sortedEntries();
-  recordList.innerHTML = entries.slice(0,10).map(x=>{
-    const total = (+x.cardio||0) + (+x.strength||0);
-    const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
-    return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
-  }).join('') || `<div class='row'><span class='d'>記録がまだありません</span></div>`;
+  recordList.innerHTML = entries.slice(0,10).map(formatEntryRow).join('')
+    || `<div class='row'><span class='d'>記録がまだありません</span></div>`;
 }
 
 function loadEntryToForm(){
@@ -659,11 +582,7 @@ function renderWeekDetail(weekEntries){
     </div>
     <div class='card'>
       <h2>日別記録</h2>
-      <div class='list'>${[...asc].reverse().map(x=>{
-        const total = (+x.cardio||0) + (+x.strength||0);
-        const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
-        return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
-      }).join('')}</div>
+      <div class='list'>${[...asc].reverse().map(formatEntryRow).join('')}</div>
     </div>
   `;
   drawWeightChart(weighted);
@@ -804,11 +723,7 @@ function renderReportDetail(weekEntries, label, prevWeekEntries){
     </div>
     <div class='card'>
       <h2>日別記録</h2>
-      <div class='list'>${[...asc].reverse().map(x=>{
-        const total = (+x.cardio||0) + (+x.strength||0);
-        const w = (x.weight !== null && x.weight !== '') ? x.weight+'kg' : '-';
-        return `<div class='row'><span class='d'>${x.date}</span><span>${w} / ${total}kcal</span></div>`;
-      }).join('')}</div>
+      <div class='list'>${[...asc].reverse().map(formatEntryRow).join('')}</div>
     </div>
   `;
 }
@@ -864,7 +779,7 @@ async function exportData(){
   };
 
   const json = JSON.stringify(readable, null, 2);
-  const filename = '減量プロジェクト_記録_' + localDateStr() + '.json';
+  const filename = '減量プロジェクト_記録.json';
   const file = new File([json], filename, {type:'application/json'});
 
   if(navigator.canShare && navigator.canShare({files:[file]})){
