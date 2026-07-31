@@ -191,6 +191,14 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
   <section class='screen' id='screen-report'>
     <div class='week-tabs' id='reportWeekTabs'></div>
     <div id='reportDetail'></div>
+
+    <div class='card'>
+      <h2 style='font-size:15px'>詳細レポートを作成</h2>
+      <div class='sub' style='margin-top:-4px'>
+        全期間の記録を整理し、Claudeへの分析依頼としてまとめます。共有シートからClaudeアプリやメモに渡して、進捗分析・今後のトレーニング提案・目標達成までの目安を聞くことができます。
+      </div>
+      <button class='btn-primary' onclick='shareReportData()'>レポート用データを準備</button>
+    </div>
   </section>
 
   <section class='screen' id='screen-settings'>
@@ -726,6 +734,65 @@ function renderReportDetail(weekEntries, label, prevWeekEntries){
       <div class='list'>${[...asc].reverse().map(formatEntryRow).join('')}</div>
     </div>
   `;
+}
+
+function buildReportPrompt(){
+  const entries = sortedEntries();
+  const asc = [...entries].reverse();
+  const weighted = asc.filter(x => x.weight !== null && x.weight !== '');
+
+  const goalW = CONFIG.goalWeight;
+  const startW = CONFIG.startWeight || (weighted.length ? +weighted[0].weight : null);
+  const latest = weighted.length ? weighted[weighted.length-1] : null;
+
+  const lines = [];
+  lines.push('# 減量プロジェクト データ分析依頼');
+  lines.push('');
+  lines.push(`目標体重: ${goalW}kg`);
+  if(startW !== null) lines.push(`開始体重: ${startW}kg`);
+  if(latest) lines.push(`直近の体重: ${latest.weight}kg(${latest.date}時点)`);
+  lines.push(`総記録日数: ${entries.length}日`);
+  lines.push('');
+  lines.push('## 日別記録(全期間・古い順)');
+  lines.push('日付 / 体重kg / サイクリングkcal / 筋トレkcal');
+  asc.forEach(x => {
+    const w = (x.weight !== null && x.weight !== '') ? x.weight : '-';
+    const c = (x.cardio !== null && x.cardio !== '') ? x.cardio : '-';
+    const s = (x.strength !== null && x.strength !== '') ? x.strength : '-';
+    lines.push(`${x.date} / ${w} / ${c} / ${s}`);
+  });
+  lines.push('');
+  lines.push('## 依頼内容');
+  lines.push('上記のデータをもとに、以下の観点で詳しく分析したレポートを作成してください。');
+  lines.push('1. これまでの減量の進捗状況(ペースや傾向、直近の変化)');
+  lines.push('2. 目標体重達成までの目安(現在のペースが続いた場合の到達時期)');
+  lines.push('3. 今後のトレーニング内容の提案(頻度・種目・強度など)');
+  lines.push('4. 食事や生活習慣に関するアドバイス');
+
+  return lines.join('\n');
+}
+
+async function shareReportData(){
+  const entries = sortedEntries();
+  if(!entries.length){ showToast('データがありません', true); return; }
+  const text = buildReportPrompt();
+
+  if(navigator.share){
+    try{
+      await navigator.share({ title: '減量プロジェクト レポート依頼', text });
+      return;
+    }catch(e){
+      if(e.name === 'AbortError') return;
+    }
+  }
+
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast('コピーしました。Claudeに貼り付けてください', false);
+  }catch(e){
+    console.error('clipboard error', e);
+    showToast('コピーに失敗しました', true);
+  }
 }
 
 function refreshSettings(){
