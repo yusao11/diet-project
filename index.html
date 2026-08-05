@@ -148,6 +148,11 @@ label{display:block;font-size:13px;color:var(--sub);margin:12px 0 6px}
     </div>
 
     <div class='card'>
+      <h2>体重の推移</h2>
+      <div class='chart-wrap' id='homeChartWrap'></div>
+    </div>
+
+    <div class='card'>
       <h2>今週のサマリー</h2>
       <div class='stats'>
         <div class='stat'><div class='lbl'>直近7日平均体重</div><div class='big' id='homeAvg7'>-</div></div>
@@ -292,24 +297,11 @@ function applyScreenChrome(name){
   if(name==='settings') refreshSettings();
 }
 
-function animateScrollTo(targetLeft, duration){
-  const start = screensWrap.scrollLeft;
-  const change = targetLeft - start;
-  if(change === 0) return;
-  const startTime = performance.now();
-  function step(now){
-    const t = Math.min((now - startTime) / duration, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-    screensWrap.scrollLeft = start + change * eased;
-    if(t < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
 function switchScreen(name){
   const idx = SCREEN_ORDER.indexOf(name);
   if(idx < 0) return;
-  animateScrollTo(idx * screensWrap.clientWidth, 200);
+  screensWrap.scrollLeft = idx * screensWrap.clientWidth;
+  applyScreenChrome(name);
 }
 
 let scrollSettleTimer = null;
@@ -396,6 +388,7 @@ function refreshHome(){
   const weighted = entries.filter(x => x.weight !== null && x.weight !== '');
 
   refreshTodo();
+  drawHomeChart([...weighted].reverse());
 
   if(!weighted.length){
     homeNow.textContent = '-';
@@ -604,6 +597,64 @@ function niceTicks(min, max, step){
   const ticks = [];
   for(let t=start; t<=end+1e-9; t+=step) ticks.push(+t.toFixed(2));
   return ticks;
+}
+
+function drawHomeChart(weighted){
+  const wrap = document.getElementById('homeChartWrap');
+  if(!weighted.length){
+    wrap.innerHTML = `<div class='chart-empty'>体重の記録がまだありません</div>`;
+    return;
+  }
+  const W=300, H=184;
+  const padL=34, padR=10, padT=18, padB=34;
+  const n = weighted.length;
+  const values = weighted.map(x => +x.weight);
+  const rawMin = Math.min(...values), rawMax = Math.max(...values);
+  const cushion = Math.max((rawMax-rawMin)*0.15, 0.3);
+  const min = rawMin - cushion, max = rawMax + cushion;
+  const span = Math.max(max-min, 0.4);
+  const stepX = n > 1 ? (W-padL-padR)/(n-1) : 0;
+
+  const yFor = v => padT + (H-padT-padB) * (1 - ((v-min)/span));
+  const pts = weighted.map((x,i) => [padL + i*stepX, yFor(+x.weight)]);
+  const pathD = pts.map((p,i) => (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+
+  const showDots = n <= 40;
+  const showValues = n <= 14;
+  const dotR = n <= 20 ? 3.2 : 2;
+  const dots = showDots
+    ? pts.map(p => `<circle cx='${p[0].toFixed(1)}' cy='${p[1].toFixed(1)}' r='${dotR}' style='fill:var(--accent)'/>`).join('')
+    : '';
+
+  const ticks = niceTicks(min, max, 0.5);
+  const grid = ticks.map(v => {
+    const y = yFor(v);
+    return `<line x1='${padL}' y1='${y.toFixed(1)}' x2='${W-padR}' y2='${y.toFixed(1)}' stroke='var(--line)' stroke-width='1' stroke-dasharray='2,3'/>
+      <text x='${padL-6}' y='${(y+3).toFixed(1)}' font-size='9' fill='var(--sub)' text-anchor='end'>${v.toFixed(1)}</text>`;
+  }).join('');
+
+  const valueLabels = showValues
+    ? weighted.map((x,i) =>
+        `<text x='${pts[i][0].toFixed(1)}' y='${(pts[i][1]-9).toFixed(1)}' font-size='9' font-weight='700' fill='var(--text)' text-anchor='middle'>${(+x.weight).toFixed(1)}</text>`
+      ).join('')
+    : '';
+
+  const maxLabels = 6;
+  const labelStep = Math.max(1, Math.ceil(n / maxLabels));
+  const dateLabels = weighted.map((x,i) => {
+    if(i % labelStep !== 0 && i !== n-1) return '';
+    const d = new Date(x.date+'T00:00:00');
+    const md = (d.getMonth()+1)+'/'+d.getDate();
+    return `<text x='${pts[i][0].toFixed(1)}' y='${H-8}' font-size='9' fill='var(--sub)' text-anchor='middle'>${md}</text>`;
+  }).join('');
+
+  wrap.innerHTML = `<svg viewBox='0 0 ${W} ${H}' style='width:100%;height:100%'>
+    ${grid}
+    <path d='${pathD}' fill='none' style='stroke:var(--accent)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/>
+    ${dots}
+    ${valueLabels}
+    ${dateLabels}
+  </svg>`;
 }
 
 function drawWeightChart(weighted){
